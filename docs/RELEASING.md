@@ -11,7 +11,8 @@ git push --follow-tags            # tag v* triggers the Release workflow
 ```
 
 Then: **Actions** → wait for "Release" (~15–25 min) → **Releases** → the
-draft appears with the NSIS installer, its `.sig` and `latest.json` →
+draft appears with the NSIS installer, its `.sig` and `latest.json`, and
+its description pre-filled with this version's git-cliff section →
 review/edit the notes → **Publish**.
 
 ## Rules and gotchas

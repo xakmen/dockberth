@@ -14,6 +14,9 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # git-cliff needs the full history and tags for release notes.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -29,6 +32,17 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      # Draft body = this version's CHANGELOG section (same git-cliff config).
+      - name: Generate release notes
+        id: notes
+        shell: bash
+        run: |
+          {
+            echo "body<<NOTES_EOF"
+            npx git-cliff --latest --strip header
+            echo "NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -41,5 +55,6 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Dockberth ${{ github.ref_name }}"
+          releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: true
           includeUpdaterJson: true
