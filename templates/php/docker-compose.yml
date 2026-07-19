@@ -1,0 +1,129 @@
+# Dockberth — PHP base environment (Laravel, WordPress, …).
+# Rendered per project from this base plus a framework preset
+# (templates/php/presets/*.json) by src-tauri/src/template.rs. The copy in
+# .dockberth/ is recreated from .dockberth/config.json — change settings
+# there, not here. See docs/PRESETS.md for the preset format.
+#
+# The app container is serversideup/php (nginx + php-fpm in one container,
+# serves HTTP on 8080 — see docs/ARCHITECTURE.md).
+
+name: dockberth-{project}
+
+services:
+  app:
+#[section:stock_image]
+    image: serversideup/php:{php_version}-fpm-nginx
+#[/section]
+#[section:app_build]
+    # Built from app.Dockerfile — needed when the preset bakes in extra
+    # PHP extensions and/or on WSL2, where www-data is remapped to the
+    # distro user's UID/GID so the container stays unprivileged yet can
+    # write the bind mount (see docs/ARCHITECTURE.md).
+    build:
+      context: .
+      dockerfile: app.Dockerfile
+#[/section]
+    restart: unless-stopped
+    environment:
+      NGINX_WEBROOT: {webroot}
+#[section:ntfs_root]
+      PHP_FPM_CHILD_PROCESS_USER: root
+      PHP_FPM_CHILD_PROCESS_GROUP: root
+#[/section]
+#[section:ntfs_root]
+    # NTFS bind mounts are root-owned inside the container and cannot be
+    # chown-ed, so on Windows drives the app runs as root (local dev only).
+    # The mounted run script adds --allow-to-run-as-root to php-fpm.
+    user: root
+#[/section]
+    volumes:
+      # The compose file lives in <project>/.dockberth/, so the project root is one level up.
+      - ..:/var/www/html
+#[section:ntfs_root]
+      - ./php-fpm-root-run:/etc/s6-overlay/s6-rc.d/php-fpm/run:ro
+#[/section]
+    networks:
+      - default
+      - dockberth
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.{project}.rule: Host(`{project}.test`)
+      traefik.http.services.{project}.loadbalancer.server.port: "{app_port}"
+    depends_on:
+      - db
+
+  db:
+    image: {db_image}
+    restart: unless-stopped
+#[section:db_mysql]
+    environment:
+      MYSQL_DATABASE: {db_name}
+      MYSQL_USER: {db_user}
+      MYSQL_PASSWORD: {db_password}
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - db-data:/var/lib/mysql
+#[/section]
+#[section:db_postgres]
+    environment:
+      POSTGRES_DB: {db_name}
+      POSTGRES_USER: {db_user}
+      POSTGRES_PASSWORD: {db_password}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+#[/section]
+    networks:
+      - default
+
+#[section:redis]
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - default
+#[/section]
+
+#[section:mailpit]
+  mailpit:
+    image: axllent/mailpit
+    restart: unless-stopped
+    networks:
+      - default
+#[/section]
+
+#[section:adminer]
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    networks:
+      - default
+#[/section]
+
+#[section:wpcli]
+  # WP-CLI companion (compose profile "tools" — not started by default):
+  #   docker compose --profile tools run --rm wpcli wp --info
+  wpcli:
+    image: wordpress:cli
+    profiles: ["tools"]
+#[section:ntfs_root]
+    user: root
+#[/section]
+#[section:wsl_user]
+    user: "{uid}:{gid}"
+#[/section]
+    volumes:
+      - ..:/var/www/html
+    networks:
+      - default
+    depends_on:
+      - db
+#[/section]
+
+volumes:
+  db-data:
+    name: dockberth-{project}-db
+
+networks:
+  default:
+  dockberth:
+    external: true

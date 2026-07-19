@@ -1,0 +1,12 @@
+{
+  "id": "wordpress",
+  "displayName": "WordPress",
+  "base": "php",
+  "detect": { "files": ["wp-settings.php"] },
+  "docroot": ".",
+  "defaults": { "phpVersion": "8.3", "db": "mariadb-11", "redis": false },
+  "appPort": 8080,
+  "extraServices": ["wpcli"],
+  "phpExtensions": ["mysqli"],
+  "notes": "Use the Database card values in wp-config.php (DB_HOST is `db`). WP-CLI ships as a `tools` profile service."
+}

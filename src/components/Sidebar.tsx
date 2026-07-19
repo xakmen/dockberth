@@ -6,7 +6,7 @@ import { DockerStatusRow, ProxyStatusRow } from "@/components/DockerStatusRow";
 import { StatusDot } from "@/components/StatusDot";
 import type { DockerStatus } from "@/lib/docker";
 import {
-  STACK_CHIP,
+  PRESET_CHIP,
   type ProjectInfo,
   type ProjectStatus,
   type ProxyStatus,
@@ -125,7 +125,7 @@ export function Sidebar({
                     : "bg-secondary text-muted-foreground",
                 )}
               >
-                {project.config ? STACK_CHIP[project.config.stack] : "?"}
+                {(project.config?.preset && PRESET_CHIP[project.config.preset]) || "?"}
               </span>
             </button>
           );

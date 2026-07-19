@@ -10,8 +10,9 @@ no terminal required.
 
 ## Features (MVP)
 
-- **One-click environments** for Laravel, WordPress, and Vendure/Node from
-  built-in templates
+- **One-click environments** for Laravel, WordPress, Vendure, and generic
+  Node/PHP projects from built-in presets (roadmap: Yii, CodeIgniter,
+  OpenCart, Drupal — post-dogfooding)
 - **Pretty local domains** — every project served as `<name>.test` through a
   shared Traefik proxy on ports 80/443
 - **Hosts file managed for you** via a small elevated helper (single UAC

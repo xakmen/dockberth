@@ -18,7 +18,11 @@ helper.
 - **Global Traefik proxy** — one container owning host ports 80/443, routing
   `<name>.test` domains to project containers via Docker labels.
 - **Generated compose files** are written to `.dockberth/` inside each user
-  project. Sources live in `templates/` (laravel, wordpress, vendure, proxy).
+  project. Sources live in `templates/`: base templates (`php/`, `node/`,
+  `proxy/`) plus framework presets (`templates/*/presets/*.json`). **Adding
+  a framework = adding a preset file** (plus registering it in
+  `src-tauri/src/preset.rs`) — see `docs/PRESETS.md`. Do not fork base
+  templates per framework.
 - **Path handling**: projects on WSL2 paths run compose inside the distro via
   `wsl.exe -d <distro> --cd <path>`; projects on NTFS run `docker compose`
   directly on Windows.

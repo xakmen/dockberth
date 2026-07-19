@@ -1,0 +1,9 @@
+{
+  "id": "node-generic",
+  "displayName": "Node.js app",
+  "base": "node",
+  "detect": { "packageJsonDeps": [] },
+  "defaults": { "nodeVersion": "22", "startCommand": "npm run dev" },
+  "appPort": 3000,
+  "notes": "Generic Node dev server — adjust the start command and app port to your project. The server must bind 0.0.0.0 (HOST env is set)."
+}

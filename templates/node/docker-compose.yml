@@ -1,0 +1,85 @@
+# Dockberth — Node base environment (Vendure, generic Node apps).
+# Rendered per project from this base plus a framework preset
+# (templates/node/presets/*.json) by src-tauri/src/template.rs. The copy in
+# .dockberth/ is recreated from .dockberth/config.json — change settings
+# there, not here. See docs/PRESETS.md for the preset format.
+
+name: dockberth-{project}
+
+services:
+  app:
+    image: node:{node_version}-bookworm-slim
+    restart: unless-stopped
+    working_dir: /app
+    command: ["sh", "-lc", "{start_command}"]
+    environment:
+      HOST: 0.0.0.0
+      PORT: "{app_port}"
+#[section:wsl_user]
+    # Unprivileged: matches the distro user so bind-mounted files stay
+    # writable both ways (1000:1000 equals the stock `node` user).
+    user: "{uid}:{gid}"
+#[/section]
+    volumes:
+      # The compose file lives in <project>/.dockberth/, so the project root is one level up.
+      - ..:/app
+#[section:node_modules_overlay]
+      # NTFS only: anonymous volume over node_modules — bind-mounted
+      # node_modules on Windows drives is unusably slow and breaks native
+      # modules. Run `npm install` INSIDE the container (docker compose
+      # exec app npm install). See docs/ARCHITECTURE.md.
+      - /app/node_modules
+#[/section]
+    networks:
+      - default
+      - dockberth
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.{project}.rule: Host(`{project}.test`)
+      traefik.http.services.{project}.loadbalancer.server.port: "{app_port}"
+#[section:db]
+    depends_on:
+      - db
+
+  db:
+    image: {db_image}
+    restart: unless-stopped
+#[section:db_mysql]
+    environment:
+      MYSQL_DATABASE: {db_name}
+      MYSQL_USER: {db_user}
+      MYSQL_PASSWORD: {db_password}
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - db-data:/var/lib/mysql
+#[/section]
+#[section:db_postgres]
+    environment:
+      POSTGRES_DB: {db_name}
+      POSTGRES_USER: {db_user}
+      POSTGRES_PASSWORD: {db_password}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+#[/section]
+    networks:
+      - default
+#[/section]
+
+#[section:redis]
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - default
+#[/section]
+
+#[section:db]
+volumes:
+  db-data:
+    name: dockberth-{project}-db
+#[/section]
+
+networks:
+  default:
+  dockberth:
+    external: true

@@ -1,5 +1,6 @@
 mod docker;
 mod hosts;
+mod preset;
 mod projects;
 mod proxy;
 mod registry;

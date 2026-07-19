@@ -55,15 +55,38 @@ Per-platform (isolated in dedicated Rust modules behind common interfaces):
   Linux daemon (`docker.rs`).
 - **Packaging** — MSI/NSIS vs dmg vs AppImage/deb (Tauri bundler config).
 
-## Laravel base image
+## Base templates + framework presets
 
-The Laravel template uses `serversideup/php:{phpVersion}-fpm-nginx` — one app
-container with nginx + php-fpm supervised together, actively maintained,
-Laravel-optimized (opcache, health checks, sane defaults) and available for
-every PHP version we target. One container instead of separate nginx/fpm
-services keeps the generated compose file and the Services UI simpler; the
-image serves HTTP on port 8080, which is what the Traefik service label
-points at.
+Environments are generated from a **base template** (one per runtime
+family) specialized by a **framework preset** (a small JSON file) — see
+[PRESETS.md](PRESETS.md) for the contributor guide.
+
+- **PHP base** (`templates/php/`): `serversideup/php:{phpVersion}-fpm-nginx`
+  — one app container with nginx + php-fpm supervised together, actively
+  maintained, Laravel-optimized (opcache, health checks, sane defaults).
+  One container instead of separate nginx/fpm services keeps the generated
+  compose and the Services UI simpler. It serves HTTP on **8080**; the
+  preset's `docroot` sets `NGINX_WEBROOT` (`public` for Laravel, the
+  project root for WordPress). Optional sections: redis, mailpit, adminer,
+  and a `wpcli` companion (compose profile `tools`, WordPress preset).
+- **Node base** (`templates/node/`): `node:{nodeVersion}-bookworm-slim`,
+  project bind-mounted at `/app`, dev server launched via the configured
+  start command (`sh -lc "npm run dev"` by default) with `HOST=0.0.0.0`
+  and `PORT` set. Database (postgres/mysql) and redis are optional
+  sections.
+
+**Traefik wiring:** every app container carries labels routing
+`Host(<name>.test)` to the preset's `appPort` (8080 for PHP, per-project
+for Node, 3000 default). The proxy only sees containers on the external
+`dockberth` network (`exposedByDefault=false`).
+
+**node_modules asymmetry (Node base):** on NTFS projects the generated
+compose overlays an **anonymous volume** on `/app/node_modules` — a
+bind-mounted node_modules on a Windows drive is unusably slow and native
+modules built on Windows don't run in Linux containers. Consequence: with
+the overlay active, `npm install` must run *inside* the container
+(`docker compose exec app npm install`). WSL2 projects mount node_modules
+straight through at native speed — installs work from either side.
 
 **NTFS caveat:** Windows bind mounts appear root-owned inside containers and
 cannot be chown-ed, so the default unprivileged `www-data` workers cannot

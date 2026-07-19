@@ -11,7 +11,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Database {
     #[serde(rename = "mariadb-11")]
     Mariadb11,
@@ -35,20 +35,75 @@ impl Database {
     }
 }
 
-/// Project settings written to `<project>/.dockberth/config.json`.
+/// Project settings written to `<project>/.dockberth/config.json` — the
+/// source of truth for compose regeneration. Most fields are optional so
+/// configs written by older Dockberth versions keep parsing; see
+/// `normalize()` for the legacy migrations.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectConfig {
     pub name: String,
-    /// Stack identifier, currently only "laravel".
-    pub stack: String,
-    pub php_version: String,
-    pub db: Database,
+    /// Preset id (docs/PRESETS.md). Inferred from `stack` on legacy configs.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preset: Option<String>,
+    /// Legacy pre-preset field ("laravel"); kept for migration only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stack: Option<String>,
+    /// Base template id ("php" | "node"), denormalized for the UI.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub base: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub php_version: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub node_version: Option<String>,
+    /// None = no database service.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub db: Option<Database>,
+    #[serde(default)]
     pub redis: bool,
+    /// DB credentials as rendered into the compose file. Legacy configs
+    /// (pre-preset) rendered "laravel" for all three — the UI falls back
+    /// to that when these are absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub db_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub db_user: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub db_password: Option<String>,
+    /// Node base only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub start_command: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub app_port: Option<u16>,
     /// Where the project lives. Optional for configs written before the
     /// WSL milestone — derived from the registry path when absent.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub location: Option<Location>,
+}
+
+impl ProjectConfig {
+    /// Migrate legacy fields in place: pre-preset configs carried
+    /// stack="laravel" and no preset/base.
+    pub fn normalize(&mut self) {
+        if self.preset.is_none() {
+            if let Some(stack) = &self.stack {
+                if crate::preset::find_preset(stack).is_some() {
+                    self.preset = Some(stack.clone());
+                }
+            }
+        }
+        if self.base.is_none() {
+            if let Some(preset) = self.preset.as_deref().and_then(crate::preset::find_preset) {
+                self.base = Some(
+                    match preset.base {
+                        crate::preset::BaseKind::Php => "php",
+                        crate::preset::BaseKind::Node => "node",
+                    }
+                    .to_string(),
+                );
+            }
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -117,4 +172,28 @@ pub fn now_millis() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
         .unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn legacy_pre_preset_config_migrates() {
+        // Exact shape written by the pre-preset milestones (harbor-test).
+        let raw = r#"{
+            "name": "harbor-test",
+            "stack": "laravel",
+            "phpVersion": "8.4",
+            "db": "mariadb-11",
+            "redis": true
+        }"#;
+        let mut config: ProjectConfig = serde_json::from_str(raw).unwrap();
+        config.normalize();
+        assert_eq!(config.preset.as_deref(), Some("laravel"));
+        assert_eq!(config.base.as_deref(), Some("php"));
+        assert_eq!(config.php_version.as_deref(), Some("8.4"));
+        assert_eq!(config.db, Some(Database::Mariadb11));
+        assert!(config.db_name.is_none()); // UI falls back to "laravel"
+    }
 }

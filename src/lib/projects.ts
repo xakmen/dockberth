@@ -1,19 +1,48 @@
 import { invoke } from "@tauri-apps/api/core";
 
-/** Mirrors of the Rust types in src-tauri/src/{projects,registry,proxy}.rs. */
+/** Mirrors of the Rust types in src-tauri/src/{projects,registry,preset,proxy}.rs. */
 
 export type ProjectStatus = "running" | "starting" | "stopped" | "error";
 
-export type StackKind = "laravel";
+export type BaseKind = "php" | "node";
 
 export type DatabaseKind = "mariadb-11" | "mysql-8.4" | "postgres-16";
 
+export type PresetDetect = { files: string[] } | { packageJsonDeps: string[] };
+
+export interface PresetDefaults {
+  phpVersion?: string;
+  nodeVersion?: string;
+  db?: DatabaseKind;
+  redis?: boolean;
+  startCommand?: string;
+}
+
+export interface Preset {
+  id: string;
+  displayName: string;
+  base: BaseKind;
+  detect: PresetDetect;
+  docroot?: string | null;
+  defaults: PresetDefaults;
+  appPort: number;
+  extraServices: string[];
+  notes?: string | null;
+}
+
 export interface ProjectConfig {
   name: string;
-  stack: StackKind;
-  phpVersion: string;
-  db: DatabaseKind;
+  preset?: string | null;
+  base?: BaseKind | null;
+  phpVersion?: string | null;
+  nodeVersion?: string | null;
+  db?: DatabaseKind | null;
   redis: boolean;
+  dbName?: string | null;
+  dbUser?: string | null;
+  dbPassword?: string | null;
+  startCommand?: string | null;
+  appPort?: number | null;
 }
 
 export type ProjectLocation =
@@ -36,7 +65,7 @@ export interface ProjectInfo {
 }
 
 export interface DetectResult {
-  stack: "laravel" | "unknown";
+  preset: Preset | null;
   suggestedName: string;
   location: ProjectLocation;
 }
@@ -55,12 +84,17 @@ export interface ProxyStatus {
 export interface CreateProjectArgs {
   path: string;
   name: string;
-  phpVersion: string;
-  db: DatabaseKind;
+  preset: string;
+  phpVersion?: string;
+  nodeVersion?: string;
+  db?: DatabaseKind | null;
   redis: boolean;
+  startCommand?: string;
+  appPort?: number;
 }
 
 export const PHP_VERSIONS = ["8.1", "8.2", "8.3", "8.4"] as const;
+export const NODE_VERSIONS = ["20", "22"] as const;
 
 export const DB_LABEL: Record<DatabaseKind, string> = {
   "mariadb-11": "MariaDB 11",
@@ -74,8 +108,26 @@ export const DB_IMAGE: Record<DatabaseKind, string> = {
   "postgres-16": "postgres:16",
 };
 
-export const STACK_CHIP: Record<StackKind, string> = {
+export const DB_PORT: Record<DatabaseKind, number> = {
+  "mariadb-11": 3306,
+  "mysql-8.4": 3306,
+  "postgres-16": 5432,
+};
+
+/** Sidebar chip per preset id. */
+export const PRESET_CHIP: Record<string, string> = {
   laravel: "LARAVEL",
+  wordpress: "WP",
+  vendure: "NODE",
+  "node-generic": "NODE",
+};
+
+/** Display name per preset id (configs carry only the id). */
+export const PRESET_LABEL: Record<string, string> = {
+  laravel: "Laravel",
+  wordpress: "WordPress",
+  vendure: "Vendure",
+  "node-generic": "Node.js app",
 };
 
 export function projectDomain(name: string): string {
@@ -94,16 +146,34 @@ export function isValidProjectName(name: string): boolean {
   return /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(name) && name.length <= 63;
 }
 
+/** DB connection details as rendered into the compose file. Legacy configs
+ * (pre-preset milestones) rendered "laravel" for name/user/password. */
+export function dbConnection(config: ProjectConfig) {
+  if (!config.db) return null;
+  return {
+    host: "db",
+    port: DB_PORT[config.db],
+    database: config.dbName ?? "laravel",
+    user: config.dbUser ?? "laravel",
+    password: config.dbPassword ?? "laravel",
+  };
+}
+
 /** Planned services derived from config — shown while no containers exist. */
 export function plannedServices(config: ProjectConfig): ServiceState[] {
   const services: ServiceState[] = [
     {
       name: "app",
       state: "stopped",
-      image: `serversideup/php:${config.phpVersion}-fpm-nginx`,
+      image:
+        config.base === "node"
+          ? `node:${config.nodeVersion ?? "22"}-bookworm-slim`
+          : `serversideup/php:${config.phpVersion ?? "8.3"}-fpm-nginx`,
     },
-    { name: "db", state: "stopped", image: DB_IMAGE[config.db] },
   ];
+  if (config.db) {
+    services.push({ name: "db", state: "stopped", image: DB_IMAGE[config.db] });
+  }
   if (config.redis) {
     services.push({ name: "redis", state: "stopped", image: "redis:7-alpine" });
   }

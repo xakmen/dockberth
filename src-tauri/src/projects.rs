@@ -12,6 +12,7 @@ use tauri_plugin_shell::ShellExt;
 
 use crate::docker::{map_container_state, run_docker_checked};
 use crate::hosts;
+use crate::preset::{self, BaseKind, Preset};
 use crate::registry::{
     self, derive_location, Database, Location, ProjectConfig, RegistryEntry,
 };
@@ -33,8 +34,8 @@ pub struct ProjectInfo {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DetectResult {
-    /// "laravel" or "unknown" (WordPress/Vendure come next).
-    pub stack: String,
+    /// Matched preset (None = unsupported folder).
+    pub preset: Option<Preset>,
     pub suggested_name: String,
     pub location: Location,
 }
@@ -72,9 +73,11 @@ fn read_config(project_path: &str) -> Option<ProjectConfig> {
     let config_path = Path::new(project_path)
         .join(".dockberth")
         .join("config.json");
-    fs::read_to_string(config_path)
+    let mut config: ProjectConfig = fs::read_to_string(config_path)
         .ok()
-        .and_then(|raw| serde_json::from_str(&raw).ok())
+        .and_then(|raw| serde_json::from_str(&raw).ok())?;
+    config.normalize();
+    Some(config)
 }
 
 /// Location from config.json when present, else derived from the registry
@@ -114,17 +117,12 @@ pub fn detect_project(path: String) -> Result<DetectResult, String> {
     if !dir.is_dir() {
         return Err(format!("'{path}' is not a directory"));
     }
-    let stack = if dir.join("artisan").is_file() {
-        "laravel"
-    } else {
-        "unknown"
-    };
     let folder_name = dir
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
     Ok(DetectResult {
-        stack: stack.to_string(),
+        preset: preset::detect(dir).cloned(),
         suggested_name: sanitize_name(&folder_name),
         location: derive_location(&path),
     })
@@ -141,9 +139,19 @@ pub fn project_list(app: AppHandle) -> Result<Vec<ProjectInfo>, String> {
 pub struct CreateArgs {
     pub path: String,
     pub name: String,
-    pub php_version: String,
-    pub db: Database,
+    pub preset: String,
+    #[serde(default)]
+    pub php_version: Option<String>,
+    #[serde(default)]
+    pub node_version: Option<String>,
+    #[serde(default)]
+    pub db: Option<Database>,
+    #[serde(default)]
     pub redis: bool,
+    #[serde(default)]
+    pub start_command: Option<String>,
+    #[serde(default)]
+    pub app_port: Option<u16>,
 }
 
 /// Create a project: render compose + config into `.dockberth/`, register
@@ -161,9 +169,8 @@ pub async fn project_create(app: AppHandle, args: CreateArgs) -> Result<ProjectI
     if !dir.is_dir() {
         return Err(format!("'{}' is not a directory", args.path));
     }
-    if !dir.join("artisan").is_file() {
-        return Err("stack not supported yet: only Laravel projects (artisan file) for now".into());
-    }
+    let preset = preset::find_preset(&args.preset)
+        .ok_or_else(|| format!("unknown preset '{}'", args.preset))?;
 
     let entries = registry::load_entries(&app)?;
     if entries.iter().any(|e| e.name == args.name) {
@@ -191,29 +198,55 @@ pub async fn project_create(app: AppHandle, args: CreateArgs) -> Result<ProjectI
         wsl_uid_gid = Some(wsl::default_uid_gid(&app, distro).await?);
     }
 
+    // Store resolved values so regeneration is stable even if preset
+    // defaults change in a later Dockberth version.
+    let has_db = args.db.or_else(|| {
+        preset
+            .defaults
+            .db
+            .as_deref()
+            .and_then(|id| serde_json::from_value(serde_json::json!(id)).ok())
+    });
     let config = ProjectConfig {
         name: args.name.clone(),
-        stack: "laravel".into(),
-        php_version: args.php_version.clone(),
-        db: args.db,
+        preset: Some(preset.id.clone()),
+        stack: None,
+        base: Some(
+            match preset.base {
+                BaseKind::Php => "php",
+                BaseKind::Node => "node",
+            }
+            .to_string(),
+        ),
+        php_version: args.php_version.or(preset.defaults.php_version.clone()),
+        node_version: args.node_version.or(preset.defaults.node_version.clone()),
+        db: has_db,
         redis: args.redis,
+        db_name: has_db.map(|_| template::DEFAULT_DB_NAME.to_string()),
+        db_user: has_db.map(|_| template::DEFAULT_DB_NAME.to_string()),
+        db_password: has_db.map(|_| template::DEFAULT_DB_NAME.to_string()),
+        start_command: args.start_command.or(preset.defaults.start_command.clone()),
+        app_port: Some(args.app_port.unwrap_or(preset.app_port)),
         location: Some(location.clone()),
     };
     let is_wsl = wsl_uid_gid.is_some();
-    let compose = template::render_laravel_compose(&config, is_wsl)?;
+    let (uid, gid) = wsl_uid_gid.unwrap_or((0, 0));
+    let compose = template::render_project_compose(preset, &config, is_wsl, uid, gid)?;
 
     let dockberth_dir = dir.join(".dockberth");
     fs::create_dir_all(&dockberth_dir)
         .map_err(|e| format!("cannot create .dockberth directory: {e}"))?;
     fs::write(dockberth_dir.join("docker-compose.yml"), compose)
         .map_err(|e| format!("cannot write docker-compose.yml: {e}"))?;
-    match wsl_uid_gid {
-        Some((uid, gid)) => {
-            let dockerfile = template::render_wsl_dockerfile(&config, uid, gid);
+    if preset.base == BaseKind::Php {
+        if template::php_needs_build(preset, is_wsl) {
+            let php_version = config.php_version.as_deref().unwrap_or_default();
+            let dockerfile =
+                template::render_php_dockerfile(preset, php_version, is_wsl, uid, gid);
             fs::write(dockberth_dir.join("app.Dockerfile"), dockerfile)
                 .map_err(|e| format!("cannot write app.Dockerfile: {e}"))?;
         }
-        None => {
+        if !is_wsl {
             fs::write(dockberth_dir.join("php-fpm-root-run"), template::FPM_ROOT_RUN)
                 .map_err(|e| format!("cannot write php-fpm-root-run: {e}"))?;
         }

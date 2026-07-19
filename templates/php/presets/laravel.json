@@ -1,0 +1,10 @@
+{
+  "id": "laravel",
+  "displayName": "Laravel",
+  "base": "php",
+  "detect": { "files": ["artisan"] },
+  "docroot": "public",
+  "defaults": { "phpVersion": "8.3", "db": "mariadb-11", "redis": true },
+  "appPort": 8080,
+  "notes": "Point DB_HOST at `db` in your .env — full connection details appear on the Database card after create."
+}

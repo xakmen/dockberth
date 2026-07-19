@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import {
   DB_LABEL,
+  NODE_VERSIONS,
   PHP_VERSIONS,
   createProject,
   detectProject,
@@ -40,8 +41,12 @@ type WslCheck =
   | { state: "ok"; distro: string }
   | { state: "error"; message: string };
 
+type DbChoice = DatabaseKind | "none";
+
 const FIELD_INPUT =
   "h-[35px] rounded-md border-input bg-input-background text-[13px] shadow-none dark:bg-input-background";
+
+const FIELD_LABEL = "text-xs font-medium text-soft";
 
 interface NewProjectDialogProps {
   open: boolean;
@@ -58,22 +63,35 @@ export function NewProjectDialog({
   const [detect, setDetect] = useState<DetectResult | null>(null);
   const [name, setName] = useState("");
   const [phpVersion, setPhpVersion] = useState<string>("8.3");
-  const [db, setDb] = useState<DatabaseKind>("mariadb-11");
-  const [redis, setRedis] = useState(true);
+  const [nodeVersion, setNodeVersion] = useState<string>("22");
+  const [db, setDb] = useState<DbChoice>("mariadb-11");
+  const [redis, setRedis] = useState(false);
+  const [startCommand, setStartCommand] = useState("npm run dev");
+  const [appPort, setAppPort] = useState("3000");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wslCheck, setWslCheck] = useState<WslCheck>({ state: "none" });
+
+  const preset = detect?.preset ?? null;
 
   const reset = () => {
     setPath("");
     setDetect(null);
     setName("");
     setPhpVersion("8.3");
+    setNodeVersion("22");
     setDb("mariadb-11");
-    setRedis(true);
+    setRedis(false);
+    setStartCommand("npm run dev");
+    setAppPort("3000");
     setCreating(false);
     setError(null);
     setWslCheck({ state: "none" });
+  };
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next) reset();
+    onOpenChange(next);
   };
 
   const checkWsl = async (distro: string) => {
@@ -102,11 +120,6 @@ export function NewProjectDialog({
     }
   };
 
-  const handleOpenChange = (next: boolean) => {
-    if (!next) reset();
-    onOpenChange(next);
-  };
-
   const browse = async () => {
     setError(null);
     const picked = await openFolderDialog({
@@ -121,6 +134,14 @@ export function NewProjectDialog({
       const result = await detectProject(picked);
       setDetect(result);
       setName(result.suggestedName);
+      // Prefill stack fields from the preset defaults.
+      const defaults = result.preset?.defaults;
+      setPhpVersion(defaults?.phpVersion ?? "8.3");
+      setNodeVersion(defaults?.nodeVersion ?? "22");
+      setDb(defaults?.db ?? (result.preset?.base === "php" ? "mariadb-11" : "none"));
+      setRedis(defaults?.redis ?? false);
+      setStartCommand(defaults?.startCommand ?? "npm run dev");
+      setAppPort(String(result.preset?.appPort ?? 3000));
       if (result.location.kind === "wsl") {
         void checkWsl(result.location.distro);
       }
@@ -130,19 +151,32 @@ export function NewProjectDialog({
     }
   };
 
+  const portValid = /^\d+$/.test(appPort) && +appPort > 0 && +appPort < 65536;
   const canCreate =
     !creating &&
     path !== "" &&
-    detect?.stack === "laravel" &&
+    preset !== null &&
     isValidProjectName(name) &&
-    (detect.location.kind !== "wsl" || wslCheck.state === "ok");
+    (preset.base !== "php" || db !== "none") &&
+    (preset.base !== "node" || (portValid && startCommand.trim() !== "")) &&
+    (detect?.location.kind !== "wsl" || wslCheck.state === "ok");
 
   const create = async () => {
-    if (!canCreate) return;
+    if (!canCreate || !preset) return;
     setCreating(true);
     setError(null);
     try {
-      const project = await createProject({ path, name, phpVersion, db, redis });
+      const project = await createProject({
+        path,
+        name,
+        preset: preset.id,
+        phpVersion: preset.base === "php" ? phpVersion : undefined,
+        nodeVersion: preset.base === "node" ? nodeVersion : undefined,
+        db: db === "none" ? null : db,
+        redis,
+        startCommand: preset.base === "node" ? startCommand.trim() : undefined,
+        appPort: preset.base === "node" ? +appPort : undefined,
+      });
       reset();
       onCreated(project);
     } catch (err: unknown) {
@@ -151,9 +185,14 @@ export function NewProjectDialog({
     }
   };
 
+  const dbChoices: DbChoice[] =
+    preset?.base === "node"
+      ? ["none", "postgres-16", "mysql-8.4"]
+      : ["mariadb-11", "mysql-8.4", "postgres-16"];
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="border-border-strong/50 bg-card sm:max-w-[560px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto border-border-strong/50 bg-card sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">
             New project
@@ -167,9 +206,7 @@ export function NewProjectDialog({
         <div className="flex flex-col gap-4">
           {/* Folder picker */}
           <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-medium text-soft">
-              Project folder
-            </Label>
+            <Label className={FIELD_LABEL}>Project folder</Label>
             <div className="flex items-center gap-2">
               <div className="min-h-[35px] flex-1 truncate rounded-md border border-input bg-input-background px-3 py-2 font-mono text-xs text-soft">
                 {path || <span className="text-faint">No folder selected</span>}
@@ -186,26 +223,26 @@ export function NewProjectDialog({
           </div>
 
           {/* Detection banner */}
-          {detect?.stack === "laravel" ? (
-            <div className="flex items-center gap-2.5 rounded-md border border-accent-border bg-accent px-3.5 py-2.5 text-[12.5px] text-accent-foreground">
-              <Sparkles className="size-3.5 shrink-0" />
+          {preset ? (
+            <div className="flex items-start gap-2.5 rounded-md border border-accent-border bg-accent px-3.5 py-2.5 text-[12.5px] leading-relaxed text-accent-foreground">
+              <Sparkles className="mt-px size-3.5 shrink-0" />
               <span>
-                <span className="font-semibold">Laravel detected</span> —
-                artisan found
+                <span className="font-semibold">{preset.displayName} detected</span>
+                {preset.notes ? <> — {preset.notes}</> : null}
               </span>
             </div>
           ) : null}
-          {detect && detect.stack !== "laravel" ? (
+          {detect && !preset ? (
             <div className="flex items-center gap-2.5 rounded-md border border-status-error/35 bg-status-error/10 px-3.5 py-2.5 text-[12.5px] text-status-error">
               <TriangleAlert className="size-3.5 shrink-0" />
-              Stack not supported yet — only Laravel projects for now
-              (WordPress and Vendure are coming next).
+              Stack not recognized — no framework markers and no package.json
+              found in this folder.
             </div>
           ) : null}
 
           {/* Name + domain preview */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="project-name" className="text-xs font-medium text-soft">
+            <Label htmlFor="project-name" className={FIELD_LABEL}>
               Project name
             </Label>
             <Input
@@ -231,56 +268,116 @@ export function NewProjectDialog({
             </div>
           </div>
 
-          {/* PHP + database */}
-          <div className="grid grid-cols-2 gap-3.5">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-medium text-soft">PHP version</Label>
-              <Select value={phpVersion} onValueChange={setPhpVersion}>
-                <SelectTrigger className={`${FIELD_INPUT} w-full font-mono text-[12.5px]`}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PHP_VERSIONS.map((version) => (
-                    <SelectItem key={version} value={version}>
-                      {version}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Stack-specific fields (from the preset's base) */}
+          {preset?.base === "php" ? (
+            <div className="grid grid-cols-2 gap-3.5">
+              <div className="flex flex-col gap-1.5">
+                <Label className={FIELD_LABEL}>PHP version</Label>
+                <Select value={phpVersion} onValueChange={setPhpVersion}>
+                  <SelectTrigger className={`${FIELD_INPUT} w-full font-mono text-[12.5px]`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PHP_VERSIONS.map((version) => (
+                      <SelectItem key={version} value={version}>
+                        {version}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className={FIELD_LABEL}>Database</Label>
+                <Select value={db} onValueChange={(v) => setDb(v as DbChoice)}>
+                  <SelectTrigger className={`${FIELD_INPUT} w-full`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dbChoices.map((kind) => (
+                      <SelectItem key={kind} value={kind}>
+                        {kind === "none" ? "None" : DB_LABEL[kind]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-medium text-soft">Database</Label>
-              <Select
-                value={db}
-                onValueChange={(value) => setDb(value as DatabaseKind)}
-              >
-                <SelectTrigger className={`${FIELD_INPUT} w-full`}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(DB_LABEL) as DatabaseKind[]).map((kind) => (
-                    <SelectItem key={kind} value={kind}>
-                      {DB_LABEL[kind]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          ) : null}
+
+          {preset?.base === "node" ? (
+            <>
+              <div className="grid grid-cols-2 gap-3.5">
+                <div className="flex flex-col gap-1.5">
+                  <Label className={FIELD_LABEL}>Node version</Label>
+                  <Select value={nodeVersion} onValueChange={setNodeVersion}>
+                    <SelectTrigger className={`${FIELD_INPUT} w-full font-mono text-[12.5px]`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {NODE_VERSIONS.map((version) => (
+                        <SelectItem key={version} value={version}>
+                          {version}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label className={FIELD_LABEL}>Database</Label>
+                  <Select value={db} onValueChange={(v) => setDb(v as DbChoice)}>
+                    <SelectTrigger className={`${FIELD_INPUT} w-full`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dbChoices.map((kind) => (
+                        <SelectItem key={kind} value={kind}>
+                          {kind === "none" ? "None" : DB_LABEL[kind]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-[1fr_120px] gap-3.5">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="start-command" className={FIELD_LABEL}>
+                    Start command
+                  </Label>
+                  <Input
+                    id="start-command"
+                    value={startCommand}
+                    onChange={(e) => setStartCommand(e.target.value)}
+                    className={`${FIELD_INPUT} font-mono text-xs`}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="app-port" className={FIELD_LABEL}>
+                    App port
+                  </Label>
+                  <Input
+                    id="app-port"
+                    value={appPort}
+                    onChange={(e) => setAppPort(e.target.value)}
+                    className={`${FIELD_INPUT} font-mono text-xs`}
+                  />
+                </div>
+              </div>
+            </>
+          ) : null}
 
           {/* Optional services */}
-          <div className="flex flex-col gap-2">
-            <Label className="text-xs font-medium text-soft">
-              Optional services
-            </Label>
-            <label className="flex w-fit cursor-pointer items-center gap-2.5 rounded-md border border-input px-3 py-2.5 text-[12.5px] text-secondary-foreground has-[[data-state=checked]]:border-accent-border has-[[data-state=checked]]:bg-accent/40 has-[[data-state=checked]]:text-foreground">
-              <Checkbox
-                checked={redis}
-                onCheckedChange={(checked) => setRedis(checked === true)}
-              />
-              Redis
-            </label>
-          </div>
+          {preset ? (
+            <div className="flex flex-col gap-2">
+              <Label className={FIELD_LABEL}>Optional services</Label>
+              <label className="flex w-fit cursor-pointer items-center gap-2.5 rounded-md border border-input px-3 py-2.5 text-[12.5px] text-secondary-foreground has-[[data-state=checked]]:border-accent-border has-[[data-state=checked]]:bg-accent/40 has-[[data-state=checked]]:text-foreground">
+                <Checkbox
+                  checked={redis}
+                  onCheckedChange={(checked) => setRedis(checked === true)}
+                />
+                Redis
+              </label>
+            </div>
+          ) : null}
 
           {/* Location hints */}
           {detect && path && detect.location.kind === "ntfs" ? (
@@ -291,6 +388,14 @@ export function NewProjectDialog({
                 best inside WSL2: native filesystem speed and an unprivileged
                 container (on NTFS the container must run as root to write
                 files).
+                {preset?.base === "node" ? (
+                  <>
+                    {" "}
+                    node_modules lives in a container volume here — run{" "}
+                    <span className="font-mono">npm install</span> inside the
+                    container.
+                  </>
+                ) : null}
               </span>
             </div>
           ) : null}
