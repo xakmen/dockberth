@@ -339,12 +339,17 @@ pub async fn project_restart(app: AppHandle, name: String) -> Result<(), String>
 }
 
 /// Shell wrapper that prefers bash and falls back to sh (alpine images).
-const SHELL_PICK: &str = "if command -v bash >/dev/null 2>&1; then exec bash; else exec sh; fi";
+/// Deliberately semicolon-free: `wt.exe` splits its command line on `;`
+/// (tab separator) even inside quotes.
+const SHELL_PICK: &str = "command -v bash >/dev/null 2>&1 && exec bash || exec sh";
 
 /// Launch a command in a real terminal window: Windows Terminal when
 /// available, plain conhost otherwise. Detached — we never wait on it.
 fn launch_terminal(command: Vec<String>) -> Result<(), String> {
-    if std::process::Command::new("wt.exe").args(&command).spawn().is_ok() {
+    // wt.exe treats a bare `;` as a new-tab separator; it must be passed
+    // as `\;`. conhost gets the args untouched.
+    let wt_args: Vec<String> = command.iter().map(|a| a.replace(';', "\\;")).collect();
+    if std::process::Command::new("wt.exe").args(&wt_args).spawn().is_ok() {
         return Ok(());
     }
     // conhost.exe <program> <args…> opens a classic console window.
