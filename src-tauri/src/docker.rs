@@ -2,12 +2,38 @@
 //!
 //! Dockberth never talks to the Docker Engine API directly — every Docker
 //! interaction shells out to the `docker` CLI via the Tauri shell plugin.
-//! Business logic (compose generation, project state) lives in the frontend;
-//! this module only executes commands and returns raw results.
+//! The CLI is identical on all platforms, which keeps this module portable;
+//! engine *detection* is the only per-platform part (see CLAUDE.md).
 
 use serde::Serialize;
 use tauri::AppHandle;
+use tauri_plugin_shell::process::Output;
 use tauri_plugin_shell::ShellExt;
+
+/// Run `docker <args>` and return the raw output.
+pub async fn run_docker(app: &AppHandle, args: &[&str]) -> Result<Output, String> {
+    app.shell()
+        .command("docker")
+        .args(args)
+        .output()
+        .await
+        .map_err(|e| format!("docker CLI not found: {e}"))
+}
+
+/// Run `docker <args>`, failing with stderr when the exit code is non-zero.
+pub async fn run_docker_checked(app: &AppHandle, args: &[&str]) -> Result<String, String> {
+    let output = run_docker(app, args).await?;
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Err(format!(
+            "docker {} failed: {}",
+            args.join(" "),
+            stderr.trim()
+        ))
+    }
+}
 
 /// Result of probing the local Docker installation.
 #[derive(Serialize)]
@@ -24,20 +50,13 @@ pub struct DockerStatus {
 /// Probe Docker by running `docker version --format json`.
 #[tauri::command]
 pub async fn docker_version(app: AppHandle) -> DockerStatus {
-    let output = app
-        .shell()
-        .command("docker")
-        .args(["version", "--format", "json"])
-        .output()
-        .await;
-
-    let output = match output {
+    let output = match run_docker(&app, &["version", "--format", "json"]).await {
         Ok(output) => output,
         Err(err) => {
             return DockerStatus {
                 running: false,
                 version: None,
-                error: Some(format!("docker CLI not found: {err}")),
+                error: Some(err),
             }
         }
     };
@@ -72,9 +91,12 @@ pub async fn docker_version(app: AppHandle) -> DockerStatus {
     }
 }
 
-// TODO: docker_compose_up / docker_compose_down — run `docker compose` against
-//       the generated file in <project>/.dockberth/, either directly (NTFS
-//       paths) or through wsl.exe (WSL2 paths, see wsl.rs).
-// TODO: docker_ps — list containers for a project (label-filtered).
-// TODO: docker_logs — stream container logs to the frontend via a Tauri event
-//       channel.
+/// Map a `docker ps` container state to the coarse project/service status
+/// used by the UI: running | starting | stopped.
+pub fn map_container_state(state: &str) -> &'static str {
+    match state {
+        "running" => "running",
+        "created" | "restarting" => "starting",
+        _ => "stopped",
+    }
+}

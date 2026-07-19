@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { StatusDot } from "@/components/StatusDot";
 import { cn } from "@/lib/utils";
-import type { ProjectStatus } from "@/lib/mock-projects";
+import type { ProjectStatus } from "@/lib/projects";
 
 const BADGE_STYLE: Record<ProjectStatus, string> = {
   running:

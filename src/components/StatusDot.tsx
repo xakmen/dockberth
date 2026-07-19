@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { ProjectStatus } from "@/lib/mock-projects";
+import type { ProjectStatus } from "@/lib/projects";
 
 const DOT_COLOR: Record<ProjectStatus, string> = {
   running: "bg-status-running",

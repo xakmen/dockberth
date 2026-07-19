@@ -1,20 +1,32 @@
-# Dockberth global proxy: Traefik
-#
-# Placeholder — service definition lands in a follow-up change.
-#
-# One Traefik container per machine (not per project). It owns host ports
-# 80/443 and routes `<name>.test` to the right project container via Docker
-# labels discovered through the Docker provider.
-#
-# Planned setup:
-#   traefik   official traefik image
-#             - ports 80:80, 443:443 (and the dashboard on a local-only port)
-#             - docker provider, constrained to containers with dockberth labels
-#             - mounts //./pipe/docker_engine or /var/run/docker.sock depending
-#               on where the daemon lives
-#             - local TLS for *.test via a generated CA (mkcert-style), later
-#
-# All project services join the external `dockberth` network created alongside
-# this proxy stack.
+# Dockberth global proxy — Traefik v3.
+# One instance per machine. Owns host ports 80/443 and routes <name>.test
+# to project containers discovered via Docker labels on the external
+# "dockberth" network. Deployed by the app into its data directory and
+# started with `docker compose up -d` (see src-tauri/src/proxy.rs).
 
-# services: {}
+name: dockberth-proxy
+
+services:
+  traefik:
+    # v3.6+ required: its Docker client speaks the API version that the
+    # Docker 29 daemon still accepts (v3.5 gets 400 Bad Request).
+    image: traefik:v3.6
+    container_name: dockberth-proxy
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=dockberth
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - dockberth
+
+networks:
+  dockberth:
+    external: true

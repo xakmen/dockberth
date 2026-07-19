@@ -35,6 +35,19 @@ helper.
 - Rust commands return raw results (stdout/exit codes/typed structs); no
   hidden retries or business decisions on the Rust side.
 
+## Platform strategy
+
+- Dockberth is **Windows-first**. macOS and Linux ports are planned (v1.1+),
+  so the codebase must stay port-ready from day one.
+- All platform-specific behavior (hosts editing, WSL2 path handling, Docker
+  engine detection, elevation) lives in dedicated Rust modules behind common
+  traits/interfaces in `src-tauri`. No `#[cfg(windows)]` scattered across
+  business logic.
+- The TypeScript/React layer is **100% platform-agnostic**: it calls Tauri
+  commands and never branches on OS.
+- Docker interaction is CLI-only (`docker` / `docker compose`), never a
+  platform SDK — the CLI is identical on all platforms.
+
 ## Design
 
 - Design mockups live in `design/dockberth-desktop-mockups/` (HTML handoff

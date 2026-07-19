@@ -6,6 +6,9 @@
 //! mounts use fast native Linux paths. Projects on NTFS run `docker compose`
 //! directly on the Windows side (see docker.rs).
 
+// TODO: run compose for WSL2 projects — projects::compose_action currently
+//       rejects WSL paths with "WSL projects coming soon"; the fix lives
+//       here (run_in_distro below), not in projects.rs.
 // TODO: list_distros — parse `wsl.exe --list --verbose` (note: UTF-16 output)
 //       and return running WSL2 distros so the UI can offer a distro picker.
 // TODO: to_wsl_path — translate \\wsl.localhost\<distro>\<path> (and legacy

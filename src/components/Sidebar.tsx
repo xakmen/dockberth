@@ -2,28 +2,46 @@ import { useEffect, useRef } from "react";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DockerStatusRow } from "@/components/DockerStatusRow";
+import { DockerStatusRow, ProxyStatusRow } from "@/components/DockerStatusRow";
 import { StatusDot } from "@/components/StatusDot";
+import type { DockerStatus } from "@/lib/docker";
+import {
+  STACK_CHIP,
+  type ProjectInfo,
+  type ProjectStatus,
+  type ProxyStatus,
+} from "@/lib/projects";
 import { cn } from "@/lib/utils";
-import { STACK_CHIP, type Project } from "@/lib/mock-projects";
 import { version as appVersion } from "../../package.json";
 
 interface SidebarProps {
-  projects: Project[];
+  projects: ProjectInfo[];
   totalCount: number;
-  selectedId: string;
-  onSelect: (id: string) => void;
+  statuses: Record<string, ProjectStatus>;
+  selectedName: string;
+  onSelect: (name: string) => void;
   search: string;
   onSearchChange: (value: string) => void;
+  onNewProject: () => void;
+  docker: DockerStatus | null;
+  dockerLoading: boolean;
+  proxy: ProxyStatus | null;
+  onProxyRetry: () => void;
 }
 
 export function Sidebar({
   projects,
   totalCount,
-  selectedId,
+  statuses,
+  selectedName,
   onSelect,
   search,
   onSearchChange,
+  onNewProject,
+  docker,
+  dockerLoading,
+  proxy,
+  onProxyRetry,
 }: SidebarProps) {
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -67,25 +85,28 @@ export function Sidebar({
         </kbd>
       </div>
 
-      <div className="px-5 pt-0.5 pb-1.5 text-[10.5px] font-semibold tracking-[1.2px] text-faint">
-        PROJECTS · {totalCount}
-      </div>
+      {totalCount > 0 ? (
+        <div className="px-5 pt-0.5 pb-1.5 text-[10.5px] font-semibold tracking-[1.2px] text-faint">
+          PROJECTS · {totalCount}
+        </div>
+      ) : null}
 
       {/* Project list */}
       <div className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto px-2">
         {projects.map((project) => {
-          const active = project.id === selectedId;
+          const active = project.name === selectedName;
+          const status = statuses[project.name] ?? "stopped";
           return (
             <button
-              key={project.id}
+              key={project.name}
               type="button"
-              onClick={() => onSelect(project.id)}
+              onClick={() => onSelect(project.name)}
               className={cn(
-                "flex items-center gap-2.5 rounded-md border border-transparent px-3 py-[9px] text-left",
+                "flex shrink-0 items-center gap-2.5 rounded-md border border-transparent px-3 py-[9px] text-left",
                 active ? "sidebar-item-active" : "hover:bg-muted",
               )}
             >
-              <StatusDot status={project.status} glow={active} />
+              <StatusDot status={status} glow={active} />
               <span
                 className={cn(
                   "flex-1 truncate",
@@ -104,12 +125,16 @@ export function Sidebar({
                     : "bg-secondary text-muted-foreground",
                 )}
               >
-                {STACK_CHIP[project.stack]}
+                {project.config ? STACK_CHIP[project.config.stack] : "?"}
               </span>
             </button>
           );
         })}
-        {projects.length === 0 ? (
+        {totalCount === 0 ? (
+          <div className="flex flex-1 items-center justify-center text-xs text-[color:var(--border-strong)]">
+            No projects
+          </div>
+        ) : projects.length === 0 ? (
           <div className="flex flex-1 items-center justify-center text-xs text-faint">
             No matching projects
           </div>
@@ -120,12 +145,18 @@ export function Sidebar({
       <div className="flex flex-col gap-2.5 p-3">
         <Button
           variant="outline"
+          onClick={onNewProject}
           className="h-auto w-full gap-[7px] rounded-md border-input bg-transparent py-[9px] text-[12.5px] font-medium text-soft shadow-none hover:border-primary hover:bg-transparent hover:text-foreground dark:bg-transparent dark:hover:bg-transparent"
         >
           <Plus className="size-3.5" />
           New project
         </Button>
-        <DockerStatusRow />
+        <div className="flex flex-col gap-1">
+          <DockerStatusRow status={docker} loading={dockerLoading} />
+          {docker?.running ? (
+            <ProxyStatusRow proxy={proxy} onRetry={onProxyRetry} />
+          ) : null}
+        </div>
       </div>
     </aside>
   );
