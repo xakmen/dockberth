@@ -65,7 +65,9 @@
 }
 
 :root {
-  /* Dark is the default theme */
+  /* Dark is the default theme; color-scheme keeps native UI (scrollbars,
+   * form controls, popups) dark to match. */
+  color-scheme: dark;
   --background: #0a0e13; /* app background */
   --foreground: #e3e9ef;
 
@@ -155,6 +157,27 @@
   button:disabled,
   [role="button"][aria-disabled="true"] {
     cursor: not-allowed;
+  }
+
+  /* Scrollbars — from the mockup handoff: slim thumb in border tones on a
+   * transparent track, replacing the native WebView2 scrollbar. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 5px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--border-strong);
+  }
+
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
   }
 }
 
