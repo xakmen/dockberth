@@ -3,6 +3,21 @@
 All notable changes to Dockberth. Generated from conventional commits
 with [git-cliff](https://git-cliff.org).
 
+## [Unreleased]
+
+### Features
+
+- enforce a 900x600 minimum window size
+
+### Fixes
+
+- stop wt.exe from splitting the shell command on semicolons
+- bundle identifier without .app suffix
+
+### Documentation
+
+- release guide, project status refresh, contributor commit rules
+
 ## [0.1.0] - 2026-07-19
 
 ### Features
