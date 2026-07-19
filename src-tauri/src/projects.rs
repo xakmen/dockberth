@@ -304,11 +304,11 @@ async fn compose_exec(app: &AppHandle, name: &str, action: &[&str]) -> Result<()
             args.extend_from_slice(action);
             let output =
                 wsl::run_in_distro(app, &distro, Some(&linux_path), &args).await?;
-            if !output.status.success() {
+            if !output.success() {
                 return Err(format!(
                     "docker compose {} failed in {distro}: {}",
                     action.join(" "),
-                    String::from_utf8_lossy(&output.stderr).trim()
+                    wsl::decode_wsl_text(&output.stderr).trim()
                 ));
             }
         }

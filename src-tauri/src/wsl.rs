@@ -7,12 +7,17 @@
 //! module: on macOS/Linux this becomes a no-op behind the same interface.
 //!
 //! CRITICAL parsing note: `wsl.exe` writes its *own* output (e.g. `-l -v`)
-//! as UTF-16LE. Commands *run inside* a distro pass the child's UTF-8
-//! output through unchanged. Decode accordingly or parses silently fail.
+//! as UTF-16LE (UTF-8 if the user sets WSL_UTF8=1). Commands *run inside*
+//! a distro pass the child's UTF-8 output through unchanged. On top of
+//! that, the shell plugin's `Command::output()` reads pipes in "line" mode:
+//! it splits on the *bytes* 0x0A/0x0D and re-joins with '\n', which shifts
+//! the 2-byte alignment of a UTF-16LE stream and turns every line after
+//! the first into garbage. All wsl.exe invocations here therefore go
+//! through `run_wsl_raw`, which collects the byte stream verbatim.
 
 use serde::Serialize;
 use tauri::AppHandle;
-use tauri_plugin_shell::process::Output;
+use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
 /// Internal Docker Desktop distros that must never show up in the UI.
@@ -27,8 +32,53 @@ pub struct WslDistro {
     pub version: u32,
 }
 
-/// Decode wsl.exe's UTF-16LE output (with possible BOM) into a String.
-fn decode_utf16le(bytes: &[u8]) -> String {
+/// Output of a `wsl.exe` invocation, collected byte-for-byte.
+pub struct WslOutput {
+    pub code: Option<i32>,
+    pub stdout: Vec<u8>,
+    pub stderr: Vec<u8>,
+}
+
+impl WslOutput {
+    pub fn success(&self) -> bool {
+        self.code == Some(0)
+    }
+}
+
+/// Run `wsl.exe <args>` collecting stdout/stderr verbatim (raw events,
+/// not the plugin's line-splitting `output()` — see module docs).
+async fn run_wsl_raw(app: &AppHandle, args: &[&str]) -> Result<WslOutput, String> {
+    let (mut rx, _child) = app
+        .shell()
+        .command("wsl.exe")
+        .args(args)
+        .set_raw_out(true)
+        .spawn()
+        .map_err(|e| format!("cannot run wsl.exe: {e}"))?;
+    let mut out = WslOutput {
+        code: None,
+        stdout: Vec::new(),
+        stderr: Vec::new(),
+    };
+    while let Some(event) = rx.recv().await {
+        match event {
+            CommandEvent::Stdout(bytes) => out.stdout.extend(bytes),
+            CommandEvent::Stderr(bytes) => out.stderr.extend(bytes),
+            CommandEvent::Terminated(payload) => out.code = payload.code,
+            CommandEvent::Error(_) => {}
+            _ => {}
+        }
+    }
+    Ok(out)
+}
+
+/// Decode wsl.exe output: UTF-16LE by default (sniffed via NUL bytes,
+/// which valid UTF-8 text never contains), UTF-8 when WSL_UTF8=1 is set
+/// in the user's environment or the bytes come from a child process.
+pub(crate) fn decode_wsl_text(bytes: &[u8]) -> String {
+    if !bytes.contains(&0) {
+        return String::from_utf8_lossy(bytes).into_owned();
+    }
     let units: Vec<u16> = bytes
         .chunks_exact(2)
         .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
@@ -96,20 +146,14 @@ pub fn parse_unc(path: &str) -> Option<(String, String)> {
 /// List installed distros (Docker Desktop internals filtered out).
 #[tauri::command]
 pub async fn wsl_list_distros(app: AppHandle) -> Result<Vec<WslDistro>, String> {
-    let output = app
-        .shell()
-        .command("wsl.exe")
-        .args(["-l", "-v"])
-        .output()
-        .await
-        .map_err(|e| format!("cannot run wsl.exe: {e}"))?;
-    if !output.status.success() {
+    let output = run_wsl_raw(&app, &["-l", "-v"]).await?;
+    if !output.success() {
         return Err(format!(
             "wsl.exe -l -v failed: {}",
-            decode_utf16le(&output.stderr).trim()
+            decode_wsl_text(&output.stderr).trim()
         ));
     }
-    Ok(parse_distro_list(&decode_utf16le(&output.stdout)))
+    Ok(parse_distro_list(&decode_wsl_text(&output.stdout)))
 }
 
 /// Run a command inside a distro: `wsl.exe -d <distro> [--cd <dir>] -- <args>`.
@@ -119,19 +163,14 @@ pub async fn run_in_distro(
     distro: &str,
     cd: Option<&str>,
     args: &[&str],
-) -> Result<Output, String> {
+) -> Result<WslOutput, String> {
     let mut full: Vec<&str> = vec!["-d", distro];
     if let Some(dir) = cd {
         full.extend_from_slice(&["--cd", dir]);
     }
     full.push("--");
     full.extend_from_slice(args);
-    app.shell()
-        .command("wsl.exe")
-        .args(full)
-        .output()
-        .await
-        .map_err(|e| format!("cannot run wsl.exe: {e}"))
+    run_wsl_raw(app, &full).await
 }
 
 /// UID and GID of the distro's default user (used to remap www-data in the
@@ -160,7 +199,7 @@ pub async fn wsl_check_docker(app: AppHandle, distro: String) -> Result<(), Stri
         &["docker", "version", "--format", "{{.Server.Version}}"],
     )
     .await?;
-    if output.status.success() && !output.stdout.is_empty() {
+    if output.success() && !output.stdout.is_empty() {
         return Ok(());
     }
     Err(format!(
@@ -217,6 +256,20 @@ mod tests {
         assert!(parse_unc(r"C:\Users\dev\sites\app").is_none());
         assert!(parse_unc(r"\\server\share\folder").is_none());
         assert!(parse_unc("/home/dev/app").is_none());
+    }
+
+    #[test]
+    fn decodes_utf16le_with_bom() {
+        let text = "  NAME\r\n* Ubuntu-24.04    Running         2\r\n";
+        let mut bytes = vec![0xFF, 0xFE]; // BOM
+        bytes.extend(text.encode_utf16().flat_map(u16::to_le_bytes));
+        assert_eq!(decode_wsl_text(&bytes), text);
+    }
+
+    #[test]
+    fn decodes_utf8_when_wsl_utf8_is_set() {
+        let text = "  NAME\r\n* Ubuntu-24.04    Running         2\r\n";
+        assert_eq!(decode_wsl_text(text.as_bytes()), text);
     }
 
     #[test]
