@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   ArrowUpRight,
+  Code,
+  FolderOpen,
   MoreHorizontal,
   Play,
   RotateCw,
@@ -21,6 +23,8 @@ import { OverviewTab } from "@/components/OverviewTab";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useProjectServices } from "@/hooks/useProjectServices";
 import {
+  openProjectEditor,
+  openProjectFolder,
   projectDomain,
   type ProjectInfo,
   type ProjectStatus,
@@ -55,7 +59,6 @@ export function ProjectView({
 }: ProjectViewProps) {
   const services = useProjectServices(project);
   const domain = projectDomain(project.name);
-  const isWsl = project.location.kind === "wsl";
   const active = status === "running" || status === "starting";
   const busy = pendingAction !== null;
   const [hostsBannerDismissed, setHostsBannerDismissed] = useState(false);
@@ -112,9 +115,8 @@ export function ProjectView({
                 </>
               ) : (
                 <Button
-                  disabled={busy || isWsl}
+                  disabled={busy}
                   onClick={() => onAction("start")}
-                  title={isWsl ? "WSL projects coming soon" : undefined}
                   className={`${ACTION_BUTTON} px-4 font-semibold hover:bg-primary-hover`}
                 >
                   <Play className="size-3 fill-current" />
@@ -139,17 +141,22 @@ export function ProjectView({
                     <ArrowUpRight className="size-3.5" />
                     Open in browser
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => void openProjectFolder(project.name)}
+                  >
+                    <FolderOpen className="size-3.5" />
+                    Open folder
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => void openProjectEditor(project.name)}
+                  >
+                    <Code className="size-3.5" />
+                    Open in VS Code
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
-
-          {isWsl ? (
-            <div className="flex items-center gap-2.5 rounded-md border border-accent-border bg-accent/40 px-3.5 py-2.5 text-xs text-accent-foreground">
-              WSL projects coming soon — this project is registered but can't
-              be started yet.
-            </div>
-          ) : null}
 
           {!project.hostsOk && !hostsBannerDismissed ? (
             <div className="flex items-center gap-2.5 rounded-md border border-status-starting/30 bg-status-starting/[0.07] px-3.5 py-2.5 text-xs leading-relaxed text-warning-text">

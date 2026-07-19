@@ -70,8 +70,15 @@ cannot be chown-ed, so the default unprivileged `www-data` workers cannot
 write to `storage/`. For projects on NTFS drives, the generated compose runs
 the app container as root (`user: root` + `PHP_FPM_CHILD_PROCESS_USER=root`
 + a mounted php-fpm run script adding `--allow-to-run-as-root`). This is
-local-dev-only and generated per project; WSL2-hosted projects will keep the
-unprivileged default.
+local-dev-only and generated per project.
+
+**WSL2 projects stay unprivileged:** bind-mounted files belong to the distro
+user (e.g. uid 1000), not to the image's `www-data` (uid 33). The generated
+environment therefore builds a thin local image (`.dockberth/app.Dockerfile`)
+that remaps `www-data` to the distro user's UID/GID via serversideup's
+`docker-php-serversideup-set-id` — the supported local-dev pattern. The
+container keeps running as `www-data`, writes work, and files created inside
+the container belong to the distro user on the host.
 
 ## To be written
 

@@ -65,9 +65,17 @@ export function OverviewTab({
               WSL · {project.location.distro}
             </span>
           ) : (
-            <span className="rounded-sm border border-border-subtle bg-secondary px-[7px] py-[3px] font-mono text-[10px] text-muted-foreground">
-              LOCAL · NTFS
-            </span>
+            <>
+              <span className="rounded-sm border border-border-subtle bg-secondary px-[7px] py-[3px] font-mono text-[10px] text-muted-foreground">
+                LOCAL · NTFS
+              </span>
+              <span
+                className="text-[10.5px] text-warning-text/80"
+                title="NTFS bind mounts are root-owned in containers, so the app container runs as root. Move the project into WSL2 for an unprivileged container and faster files."
+              >
+                runs as root
+              </span>
+            </>
           )}
         </div>
       </Card>

@@ -8,13 +8,15 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
+use tauri_plugin_shell::ShellExt;
 
 use crate::docker::{map_container_state, run_docker_checked};
 use crate::hosts;
 use crate::registry::{
-    self, detect_location, Database, Location, ProjectConfig, RegistryEntry,
+    self, derive_location, Database, Location, ProjectConfig, RegistryEntry,
 };
 use crate::template;
+use crate::wsl;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -66,20 +68,33 @@ fn sanitize_name(raw: &str) -> String {
     out.trim_matches('-').to_string()
 }
 
-fn entry_to_info(entry: &RegistryEntry) -> ProjectInfo {
-    let config_path = Path::new(&entry.path)
+fn read_config(project_path: &str) -> Option<ProjectConfig> {
+    let config_path = Path::new(project_path)
         .join(".dockberth")
         .join("config.json");
-    let config = fs::read_to_string(config_path)
+    fs::read_to_string(config_path)
         .ok()
-        .and_then(|raw| serde_json::from_str(&raw).ok());
+        .and_then(|raw| serde_json::from_str(&raw).ok())
+}
+
+/// Location from config.json when present, else derived from the registry
+/// path (backward compat with configs written before the WSL milestone).
+fn effective_location(entry: &RegistryEntry, config: Option<&ProjectConfig>) -> Location {
+    config
+        .and_then(|c| c.location.clone())
+        .unwrap_or_else(|| derive_location(&entry.path))
+}
+
+fn entry_to_info(entry: &RegistryEntry) -> ProjectInfo {
+    let config = read_config(&entry.path);
+    let location = effective_location(entry, config.as_ref());
     let hosts_ok =
         hosts::domain_present(&format!("{}.test", entry.name)).unwrap_or(false);
     ProjectInfo {
         name: entry.name.clone(),
         path: entry.path.clone(),
         created_at: entry.created_at,
-        location: detect_location(&entry.path),
+        location,
         config,
         hosts_ok,
     }
@@ -111,7 +126,7 @@ pub fn detect_project(path: String) -> Result<DetectResult, String> {
     Ok(DetectResult {
         stack: stack.to_string(),
         suggested_name: sanitize_name(&folder_name),
-        location: detect_location(&path),
+        location: derive_location(&path),
     })
 }
 
@@ -158,24 +173,50 @@ pub async fn project_create(app: AppHandle, args: CreateArgs) -> Result<ProjectI
         return Err("this folder is already registered as a project".into());
     }
 
+    let location = derive_location(&args.path);
+    let mut wsl_uid_gid = None;
+    if let Location::Wsl { distro, .. } = &location {
+        // Reject WSL1 (bind-mount semantics differ) and unknown distros.
+        let distros = wsl::wsl_list_distros(app.clone()).await?;
+        match distros.iter().find(|d| &d.name == distro) {
+            None => return Err(format!("WSL distro '{distro}' not found")),
+            Some(d) if d.version != 2 => {
+                return Err(format!(
+                    "'{distro}' is a WSL1 distro — WSL2 required. \
+                     Convert it with: wsl --set-version {distro} 2"
+                ))
+            }
+            Some(_) => {}
+        }
+        wsl_uid_gid = Some(wsl::default_uid_gid(&app, distro).await?);
+    }
+
     let config = ProjectConfig {
         name: args.name.clone(),
         stack: "laravel".into(),
         php_version: args.php_version.clone(),
         db: args.db,
         redis: args.redis,
+        location: Some(location.clone()),
     };
-    let ntfs_root = detect_location(&args.path) == Location::Ntfs;
-    let compose = template::render_laravel_compose(&config, ntfs_root)?;
+    let is_wsl = wsl_uid_gid.is_some();
+    let compose = template::render_laravel_compose(&config, is_wsl)?;
 
     let dockberth_dir = dir.join(".dockberth");
     fs::create_dir_all(&dockberth_dir)
         .map_err(|e| format!("cannot create .dockberth directory: {e}"))?;
     fs::write(dockberth_dir.join("docker-compose.yml"), compose)
         .map_err(|e| format!("cannot write docker-compose.yml: {e}"))?;
-    if ntfs_root {
-        fs::write(dockberth_dir.join("php-fpm-root-run"), template::FPM_ROOT_RUN)
-            .map_err(|e| format!("cannot write php-fpm-root-run: {e}"))?;
+    match wsl_uid_gid {
+        Some((uid, gid)) => {
+            let dockerfile = template::render_wsl_dockerfile(&config, uid, gid);
+            fs::write(dockberth_dir.join("app.Dockerfile"), dockerfile)
+                .map_err(|e| format!("cannot write app.Dockerfile: {e}"))?;
+        }
+        None => {
+            fs::write(dockberth_dir.join("php-fpm-root-run"), template::FPM_ROOT_RUN)
+                .map_err(|e| format!("cannot write php-fpm-root-run: {e}"))?;
+        }
     }
     let config_json = serde_json::to_string_pretty(&config)
         .map_err(|e| format!("cannot serialize config: {e}"))?;
@@ -197,36 +238,97 @@ pub async fn project_create(app: AppHandle, args: CreateArgs) -> Result<ProjectI
     Ok(entry_to_info(&entry))
 }
 
-async fn compose_action(app: &AppHandle, name: &str, action: &[&str]) -> Result<(), String> {
+/// Single routing point for every compose invocation:
+/// NTFS → `docker compose` from Windows; WSL2 → the same command executed
+/// inside the distro so bind mounts use native Linux paths.
+async fn compose_exec(app: &AppHandle, name: &str, action: &[&str]) -> Result<(), String> {
     let entry = find_entry(app, name)?;
-    if detect_location(&entry.path) != Location::Ntfs {
-        // TODO(wsl.rs): run compose inside the distro via
-        // `wsl.exe -d <distro> --cd <path>` instead of rejecting.
-        return Err("WSL projects coming soon".into());
-    }
-    let file = compose_file(&entry.path);
-    if !Path::new(&file).is_file() {
+    if !Path::new(&compose_file(&entry.path)).is_file() {
         return Err("missing .dockberth/docker-compose.yml — recreate the project".into());
     }
-    let mut args = vec!["compose", "-f", file.as_str()];
-    args.extend_from_slice(action);
-    run_docker_checked(app, &args).await?;
+    let config = read_config(&entry.path);
+    match effective_location(&entry, config.as_ref()) {
+        Location::Ntfs { windows_path } => {
+            let file = compose_file(&windows_path);
+            let mut args = vec!["compose", "-f", file.as_str()];
+            args.extend_from_slice(action);
+            run_docker_checked(app, &args).await?;
+        }
+        Location::Wsl { distro, linux_path } => {
+            let mut args = vec!["docker", "compose", "-f", ".dockberth/docker-compose.yml"];
+            args.extend_from_slice(action);
+            let output =
+                wsl::run_in_distro(app, &distro, Some(&linux_path), &args).await?;
+            if !output.status.success() {
+                return Err(format!(
+                    "docker compose {} failed in {distro}: {}",
+                    action.join(" "),
+                    String::from_utf8_lossy(&output.stderr).trim()
+                ));
+            }
+        }
+    }
     Ok(())
 }
 
 #[tauri::command]
 pub async fn project_start(app: AppHandle, name: String) -> Result<(), String> {
-    compose_action(&app, &name, &["up", "-d"]).await
+    compose_exec(&app, &name, &["up", "-d"]).await
 }
 
 #[tauri::command]
 pub async fn project_stop(app: AppHandle, name: String) -> Result<(), String> {
-    compose_action(&app, &name, &["stop"]).await
+    compose_exec(&app, &name, &["stop"]).await
 }
 
 #[tauri::command]
 pub async fn project_restart(app: AppHandle, name: String) -> Result<(), String> {
-    compose_action(&app, &name, &["restart"]).await
+    compose_exec(&app, &name, &["restart"]).await
+}
+
+/// Open the project folder in Explorer (works for UNC WSL paths too).
+#[tauri::command]
+pub fn project_open_folder(app: AppHandle, name: String) -> Result<(), String> {
+    let entry = find_entry(&app, &name)?;
+    std::process::Command::new("explorer.exe")
+        .arg(&entry.path)
+        .spawn()
+        .map_err(|e| format!("cannot open Explorer: {e}"))?;
+    Ok(())
+}
+
+/// Open the project in VS Code. WSL projects use the Remote-WSL target
+/// (native-speed editing); falls back to opening the UNC path directly.
+#[tauri::command]
+pub async fn project_open_editor(app: AppHandle, name: String) -> Result<(), String> {
+    let entry = find_entry(&app, &name)?;
+    let config = read_config(&entry.path);
+    let shell = app.shell();
+
+    if let Location::Wsl { distro, linux_path } = effective_location(&entry, config.as_ref()) {
+        let remote = format!("wsl+{distro}");
+        let output = shell
+            .command("cmd")
+            .args(["/C", "code", "--remote", &remote, &linux_path])
+            .output()
+            .await
+            .map_err(|e| format!("cannot run VS Code CLI: {e}"))?;
+        if output.status.success() {
+            return Ok(());
+        }
+    }
+
+    let output = shell
+        .command("cmd")
+        .args(["/C", "code", &entry.path])
+        .output()
+        .await
+        .map_err(|e| format!("cannot run VS Code CLI: {e}"))?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err("VS Code CLI ('code') not found in PATH".into())
+    }
 }
 
 /// Coarse status for every registered project in a single `docker ps` call,

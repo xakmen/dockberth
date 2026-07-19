@@ -27,10 +27,18 @@ import {
   detectProject,
   isValidProjectName,
   projectDomain,
+  wslCheckDocker,
+  wslListDistros,
   type DatabaseKind,
   type DetectResult,
   type ProjectInfo,
 } from "@/lib/projects";
+
+type WslCheck =
+  | { state: "none" }
+  | { state: "checking" }
+  | { state: "ok"; distro: string }
+  | { state: "error"; message: string };
 
 const FIELD_INPUT =
   "h-[35px] rounded-md border-input bg-input-background text-[13px] shadow-none dark:bg-input-background";
@@ -54,6 +62,7 @@ export function NewProjectDialog({
   const [redis, setRedis] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [wslCheck, setWslCheck] = useState<WslCheck>({ state: "none" });
 
   const reset = () => {
     setPath("");
@@ -64,6 +73,33 @@ export function NewProjectDialog({
     setRedis(true);
     setCreating(false);
     setError(null);
+    setWslCheck({ state: "none" });
+  };
+
+  const checkWsl = async (distro: string) => {
+    setWslCheck({ state: "checking" });
+    try {
+      const distros = await wslListDistros();
+      const found = distros.find((d) => d.name === distro);
+      if (!found) {
+        setWslCheck({
+          state: "error",
+          message: `WSL distro '${distro}' not found`,
+        });
+        return;
+      }
+      if (found.version !== 2) {
+        setWslCheck({
+          state: "error",
+          message: `'${distro}' is a WSL1 distro — WSL2 required. Convert it with: wsl --set-version ${distro} 2`,
+        });
+        return;
+      }
+      await wslCheckDocker(distro);
+      setWslCheck({ state: "ok", distro });
+    } catch (err: unknown) {
+      setWslCheck({ state: "error", message: String(err) });
+    }
   };
 
   const handleOpenChange = (next: boolean) => {
@@ -80,10 +116,14 @@ export function NewProjectDialog({
     });
     if (typeof picked !== "string") return;
     setPath(picked);
+    setWslCheck({ state: "none" });
     try {
       const result = await detectProject(picked);
       setDetect(result);
       setName(result.suggestedName);
+      if (result.location.kind === "wsl") {
+        void checkWsl(result.location.distro);
+      }
     } catch (err: unknown) {
       setDetect(null);
       setError(String(err));
@@ -94,7 +134,8 @@ export function NewProjectDialog({
     !creating &&
     path !== "" &&
     detect?.stack === "laravel" &&
-    isValidProjectName(name);
+    isValidProjectName(name) &&
+    (detect.location.kind !== "wsl" || wslCheck.state === "ok");
 
   const create = async () => {
     if (!canCreate) return;
@@ -246,18 +287,31 @@ export function NewProjectDialog({
             <div className="flex items-start gap-2.5 rounded-md border border-status-starting/30 bg-status-starting/[0.07] px-3.5 py-2.5 text-xs leading-relaxed text-warning-text">
               <TriangleAlert className="mt-px size-3.5 shrink-0" />
               <span>
-                Project is on an NTFS drive — consider moving it into WSL2 for
-                much faster file performance.
+                Project is on an NTFS drive — it will work, but projects run
+                best inside WSL2: native filesystem speed and an unprivileged
+                container (on NTFS the container must run as root to write
+                files).
               </span>
             </div>
           ) : null}
-          {detect && detect.location.kind === "wsl" ? (
+          {detect?.location.kind === "wsl" && wslCheck.state === "checking" ? (
+            <div className="flex items-center gap-2.5 rounded-md border border-border-subtle bg-muted px-3.5 py-2.5 text-xs text-muted-foreground">
+              Checking Docker integration for {detect.location.distro}…
+            </div>
+          ) : null}
+          {wslCheck.state === "ok" ? (
             <div className="flex items-start gap-2.5 rounded-md border border-accent-border bg-accent/40 px-3.5 py-2.5 text-xs leading-relaxed text-accent-foreground">
               <Sparkles className="mt-px size-3.5 shrink-0" />
               <span>
-                WSL2 project ({detect.location.distro}) — you can register it
-                now, but Start is coming in the next milestone.
+                WSL2 · {wslCheck.distro} — native filesystem speed, container
+                runs unprivileged.
               </span>
+            </div>
+          ) : null}
+          {wslCheck.state === "error" ? (
+            <div className="flex items-start gap-2.5 rounded-md border border-status-error/35 bg-status-error/10 px-3.5 py-2.5 text-xs leading-relaxed break-words text-status-error">
+              <TriangleAlert className="mt-px size-3.5 shrink-0" />
+              <span>{wslCheck.message}</span>
             </div>
           ) : null}
 

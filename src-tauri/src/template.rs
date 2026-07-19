@@ -11,6 +11,7 @@
 use crate::registry::ProjectConfig;
 
 const LARAVEL_TEMPLATE: &str = include_str!("../../templates/laravel/docker-compose.yml");
+const LARAVEL_WSL_DOCKERFILE: &str = include_str!("../../templates/laravel/app.Dockerfile");
 const PROXY_TEMPLATE: &str = include_str!("../../templates/proxy/docker-compose.yml");
 
 pub const SUPPORTED_PHP_VERSIONS: [&str; 4] = ["8.1", "8.2", "8.3", "8.4"];
@@ -60,8 +61,9 @@ fn render(template: &str, vars: &[(&str, &str)], sections: &[(&str, bool)]) -> S
 pub const FPM_ROOT_RUN: &str = "#!/command/execlineb -P\nwith-contenv\ns6-notifyoncheck -d\n/usr/local/sbin/php-fpm --nodaemonize --allow-to-run-as-root\n";
 
 /// Render the Laravel compose file for a validated project configuration.
-/// `ntfs_root` enables the run-as-root override needed on NTFS bind mounts.
-pub fn render_laravel_compose(config: &ProjectConfig, ntfs_root: bool) -> Result<String, String> {
+/// `wsl` switches the app service from an image (NTFS, runs as root — see
+/// the ntfs_root section) to a local build that keeps it unprivileged.
+pub fn render_laravel_compose(config: &ProjectConfig, wsl: bool) -> Result<String, String> {
     if !is_valid_project_name(&config.name) {
         return Err(format!(
             "invalid project name '{}': use lowercase letters, digits and hyphens",
@@ -84,9 +86,25 @@ pub fn render_laravel_compose(config: &ProjectConfig, ntfs_root: bool) -> Result
             ("db_mysql", !config.db.is_postgres()),
             ("db_postgres", config.db.is_postgres()),
             ("redis", config.redis),
-            ("ntfs_root", ntfs_root),
+            ("ntfs_root", !wsl),
+            ("ntfs_image", !wsl),
+            ("wsl_build", wsl),
         ],
     ))
+}
+
+/// Render the app.Dockerfile for WSL2 projects (www-data remapped to the
+/// distro user so the unprivileged container can write the bind mount).
+pub fn render_wsl_dockerfile(config: &ProjectConfig, uid: u32, gid: u32) -> String {
+    render(
+        LARAVEL_WSL_DOCKERFILE,
+        &[
+            ("php_version", config.php_version.as_str()),
+            ("uid", uid.to_string().as_str()),
+            ("gid", gid.to_string().as_str()),
+        ],
+        &[],
+    )
 }
 
 /// The proxy compose file has no placeholders; expose it for proxy.rs.
@@ -106,16 +124,18 @@ mod tests {
             php_version: "8.3".into(),
             db,
             redis,
+            location: None,
         }
     }
 
     #[test]
-    fn renders_mariadb_with_redis() {
-        let out = render_laravel_compose(&config(Database::Mariadb11, true), true).unwrap();
+    fn renders_ntfs_mariadb_with_redis() {
+        let out = render_laravel_compose(&config(Database::Mariadb11, true), false).unwrap();
         assert!(out.contains("user: root"));
         assert!(out.contains("php-fpm-root-run"));
         assert!(out.contains("name: dockberth-aquashop"));
         assert!(out.contains("image: serversideup/php:8.3-fpm-nginx"));
+        assert!(!out.contains("build:"));
         assert!(out.contains("image: mariadb:11"));
         assert!(out.contains("MYSQL_DATABASE: laravel"));
         assert!(!out.contains("POSTGRES_DB"));
@@ -127,8 +147,24 @@ mod tests {
     }
 
     #[test]
-    fn renders_postgres_without_redis() {
-        let out = render_laravel_compose(&config(Database::Postgres16, false), false).unwrap();
+    fn renders_wsl_unprivileged_build() {
+        let out = render_laravel_compose(&config(Database::Mariadb11, true), true).unwrap();
+        assert!(out.contains("build:"));
+        assert!(out.contains("dockerfile: app.Dockerfile"));
+        assert!(!out.contains("image: serversideup"));
+        assert!(!out.contains("user: root"));
+        assert!(!out.contains("php-fpm-root-run"));
+
+        let dockerfile = render_wsl_dockerfile(&config(Database::Mariadb11, true), 1000, 1000);
+        assert!(dockerfile.contains("FROM serversideup/php:8.3-fpm-nginx"));
+        assert!(dockerfile.contains("docker-php-serversideup-set-id www-data 1000:1000"));
+        assert!(dockerfile.contains("USER www-data"));
+        assert!(!dockerfile.contains("{uid}"));
+    }
+
+    #[test]
+    fn renders_wsl_postgres_without_redis() {
+        let out = render_laravel_compose(&config(Database::Postgres16, false), true).unwrap();
         assert!(out.contains("image: postgres:16"));
         assert!(out.contains("POSTGRES_DB: laravel"));
         assert!(!out.contains("MYSQL_DATABASE"));

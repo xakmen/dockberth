@@ -45,6 +45,10 @@ pub struct ProjectConfig {
     pub php_version: String,
     pub db: Database,
     pub redis: bool,
+    /// Where the project lives. Optional for configs written before the
+    /// WSL milestone — derived from the registry path when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub location: Option<Location>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -62,22 +66,23 @@ struct RegistryFile {
 }
 
 /// Where the project lives — drives the WSL2-vs-NTFS execution split.
-#[derive(Serialize, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum Location {
-    Wsl { distro: String },
-    Ntfs,
+    #[serde(rename_all = "camelCase")]
+    Wsl { distro: String, linux_path: String },
+    #[serde(rename_all = "camelCase")]
+    Ntfs { windows_path: String },
 }
 
-pub fn detect_location(path: &str) -> Location {
-    let normalized = path.replace('/', "\\");
-    for prefix in ["\\\\wsl$\\", "\\\\wsl.localhost\\"] {
-        if let Some(rest) = normalized.strip_prefix(prefix) {
-            let distro = rest.split('\\').next().unwrap_or("").to_string();
-            return Location::Wsl { distro };
-        }
+/// Derive a location from a Windows-side path (UNC → WSL, otherwise NTFS).
+pub fn derive_location(path: &str) -> Location {
+    match crate::wsl::parse_unc(path) {
+        Some((distro, linux_path)) => Location::Wsl { distro, linux_path },
+        None => Location::Ntfs {
+            windows_path: path.to_string(),
+        },
     }
-    Location::Ntfs
 }
 
 fn registry_path(app: &AppHandle) -> Result<PathBuf, String> {

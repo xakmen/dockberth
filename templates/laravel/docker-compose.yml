@@ -10,7 +10,17 @@ name: dockberth-{project}
 
 services:
   app:
+#[section:ntfs_image]
     image: serversideup/php:{php_version}-fpm-nginx
+#[/section]
+#[section:wsl_build]
+    # Built from app.Dockerfile: www-data remapped to the distro user's
+    # UID/GID so the container stays unprivileged yet can write the bind
+    # mount (see docs/ARCHITECTURE.md).
+    build:
+      context: .
+      dockerfile: app.Dockerfile
+#[/section]
     restart: unless-stopped
 #[section:ntfs_root]
     # NTFS bind mounts appear root-owned inside the container and cannot be

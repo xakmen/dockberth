@@ -24,6 +24,10 @@ pub fn run() {
             projects::project_restart,
             projects::projects_status,
             projects::project_services,
+            projects::project_open_folder,
+            projects::project_open_editor,
+            wsl::wsl_list_distros,
+            wsl::wsl_check_docker,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

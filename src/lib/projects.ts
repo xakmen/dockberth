@@ -16,7 +16,15 @@ export interface ProjectConfig {
   redis: boolean;
 }
 
-export type ProjectLocation = { kind: "wsl"; distro: string } | { kind: "ntfs" };
+export type ProjectLocation =
+  | { kind: "wsl"; distro: string; linuxPath: string }
+  | { kind: "ntfs"; windowsPath: string };
+
+export interface WslDistro {
+  name: string;
+  isDefault: boolean;
+  version: number;
+}
 
 export interface ProjectInfo {
   name: string;
@@ -120,3 +128,10 @@ export const projectServices = (name: string) =>
 export const hostsEnsure = (domain: string) =>
   invoke<boolean>("hosts_ensure", { domain });
 export const proxyEnsure = () => invoke<ProxyStatus>("proxy_ensure");
+export const wslListDistros = () => invoke<WslDistro[]>("wsl_list_distros");
+export const wslCheckDocker = (distro: string) =>
+  invoke<void>("wsl_check_docker", { distro });
+export const openProjectFolder = (name: string) =>
+  invoke<void>("project_open_folder", { name });
+export const openProjectEditor = (name: string) =>
+  invoke<void>("project_open_editor", { name });
