@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { MoreHorizontal, Plus, Search, Wrench } from "lucide-react";
+import { MoreHorizontal, Plus, RefreshCw, Search, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -30,6 +30,7 @@ interface SidebarProps {
   onSearchChange: (value: string) => void;
   onNewProject: () => void;
   onRepairHosts: () => void;
+  onCheckUpdates: () => void;
   docker: DockerStatus | null;
   dockerLoading: boolean;
   proxy: ProxyStatus | null;
@@ -46,6 +47,7 @@ export function Sidebar({
   onSearchChange,
   onNewProject,
   onRepairHosts,
+  onCheckUpdates,
   docker,
   dockerLoading,
   proxy,
@@ -175,6 +177,13 @@ export function Sidebar({
               <DropdownMenuItem onSelect={onRepairHosts}>
                 <Wrench className="size-3.5" />
                 Repair hosts entries
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onCheckUpdates}>
+                <RefreshCw className="size-3.5" />
+                Check for updates
+                <span className="ml-auto font-mono text-[10px] text-faint">
+                  v{appVersion}
+                </span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

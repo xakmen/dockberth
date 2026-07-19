@@ -3,9 +3,11 @@ import { EmptyState } from "@/components/EmptyState";
 import { NewProjectDialog } from "@/components/NewProjectDialog";
 import { ProjectView, type ProjectAction } from "@/components/ProjectView";
 import { Sidebar } from "@/components/Sidebar";
+import { UpdateBanner } from "@/components/UpdateBanner";
 import { useContextMenuGuard } from "@/hooks/useContextMenuGuard";
 import { useDockerStatus } from "@/hooks/useDockerStatus";
 import { useProjects } from "@/hooks/useProjects";
+import { useUpdater } from "@/hooks/useUpdater";
 import {
   hostsEnsure,
   hostsRepair,
@@ -35,6 +37,7 @@ function App() {
   useContextMenuGuard();
   const docker = useDockerStatus();
   const { projects, statuses, proxyRunning, refresh, pollNow } = useProjects();
+  const updater = useUpdater();
 
   const [proxy, setProxy] = useState<ProxyStatus | null>(null);
   const proxyRequested = useRef(false);
@@ -220,6 +223,11 @@ function App() {
         search={search}
         onSearchChange={setSearch}
         onNewProject={() => setWizardOpen(true)}
+        onCheckUpdates={() =>
+          void updater.checkNow().then((found) => {
+            if (!found) notify("Dockberth is up to date");
+          })
+        }
         onRepairHosts={() =>
           void hostsRepair()
             .then((ok) => {
@@ -266,6 +274,7 @@ function App() {
           void pollNow();
         }}
       />
+      <UpdateBanner status={updater.status} onInstall={() => void updater.install()} />
       {toast ? (
         <div className="fixed right-4 bottom-4 z-50 rounded-md border border-accent-border bg-accent px-4 py-2.5 text-[12.5px] text-accent-foreground shadow-lg">
           {toast}
