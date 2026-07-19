@@ -1,10 +1,13 @@
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusDot } from "@/components/StatusDot";
 import {
   DB_LABEL,
   PRESET_LABEL,
   dbConnection,
+  openProjectShell,
   type ProjectInfo,
+  type ProjectStatus,
   type ServiceState,
 } from "@/lib/projects";
 
@@ -23,14 +26,27 @@ function Row({ label, value, mono = true }: { label: string; value: string; mono
 
 export function OverviewTab({
   project,
+  status,
   services,
 }: {
   project: ProjectInfo;
+  status: ProjectStatus;
   services: ServiceState[];
 }) {
   const runningCount = services.filter((s) => s.state === "running").length;
   const config = project.config;
   const db = config ? dbConnection(config) : null;
+  const projectRunning = status === "running";
+
+  // WP-CLI is a `tools`-profile companion, not a running service — show it
+  // as an extra row with a Shell button (compose run --rm wpcli).
+  const rows: (ServiceState & { tools?: boolean })[] =
+    config?.preset === "wordpress" && !services.some((s) => s.name === "wpcli")
+      ? [
+          ...services,
+          { name: "wpcli", state: "stopped", image: "wordpress:cli", tools: true },
+        ]
+      : services;
 
   return (
     <div className="grid h-full min-h-0 grid-cols-2 grid-rows-[auto_auto_1fr] gap-4 overflow-y-auto px-7 pt-5 pb-7">
@@ -120,11 +136,11 @@ export function OverviewTab({
           {runningCount > 0 ? `${runningCount} running` : services.length}
         </div>
         <div className="flex flex-col">
-          {services.map((service, index) => (
+          {rows.map((service, index) => (
             <div
               key={service.name}
               className={
-                index < services.length - 1
+                index < rows.length - 1
                   ? "flex items-center gap-3 border-b border-secondary px-1 py-[9px]"
                   : "flex items-center gap-3 px-1 py-[9px]"
               }
@@ -135,10 +151,19 @@ export function OverviewTab({
               </span>
               <span className="flex-1 truncate font-mono text-[11.5px] text-faint">
                 {service.image}
+                {service.tools ? " · tools profile" : ""}
               </span>
+              <Button
+                variant="outline"
+                disabled={service.tools ? !projectRunning : service.state !== "running"}
+                onClick={() => void openProjectShell(project.name, service.name)}
+                className="h-auto rounded-[6px] border-input bg-transparent px-3 py-1 text-[11.5px] font-normal text-muted-foreground shadow-none hover:border-border-strong hover:bg-transparent hover:text-foreground dark:bg-transparent dark:hover:bg-transparent"
+              >
+                Shell
+              </Button>
             </div>
           ))}
-          {services.length === 0 ? (
+          {rows.length === 0 ? (
             <div className="px-1 py-2 text-xs text-faint">No services</div>
           ) : null}
         </div>

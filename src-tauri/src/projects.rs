@@ -50,7 +50,7 @@ pub struct ServiceState {
     pub image: String,
 }
 
-fn compose_file(project_path: &str) -> String {
+pub(crate) fn compose_file(project_path: &str) -> String {
     Path::new(project_path)
         .join(".dockberth")
         .join("docker-compose.yml")
@@ -71,7 +71,7 @@ fn sanitize_name(raw: &str) -> String {
     out.trim_matches('-').to_string()
 }
 
-fn read_config(project_path: &str) -> Option<ProjectConfig> {
+pub(crate) fn read_config(project_path: &str) -> Option<ProjectConfig> {
     let config_path = Path::new(project_path)
         .join(".dockberth")
         .join("config.json");
@@ -84,7 +84,10 @@ fn read_config(project_path: &str) -> Option<ProjectConfig> {
 
 /// Location from config.json when present, else derived from the registry
 /// path (backward compat with configs written before the WSL milestone).
-fn effective_location(entry: &RegistryEntry, config: Option<&ProjectConfig>) -> Location {
+pub(crate) fn effective_location(
+    entry: &RegistryEntry,
+    config: Option<&ProjectConfig>,
+) -> Location {
     config
         .and_then(|c| c.location.clone())
         .unwrap_or_else(|| derive_location(&entry.path))
@@ -112,7 +115,7 @@ fn entry_to_info(entry: &RegistryEntry) -> ProjectInfo {
     }
 }
 
-fn find_entry(app: &AppHandle, name: &str) -> Result<RegistryEntry, String> {
+pub(crate) fn find_entry(app: &AppHandle, name: &str) -> Result<RegistryEntry, String> {
     registry::load_entries(app)?
         .into_iter()
         .find(|e| e.name == name)
@@ -326,6 +329,135 @@ pub async fn project_stop(app: AppHandle, name: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn project_restart(app: AppHandle, name: String) -> Result<(), String> {
     compose_exec(&app, &name, &["restart"]).await
+}
+
+/// Shell wrapper that prefers bash and falls back to sh (alpine images).
+const SHELL_PICK: &str = "if command -v bash >/dev/null 2>&1; then exec bash; else exec sh; fi";
+
+/// Launch a command in a real terminal window: Windows Terminal when
+/// available, plain conhost otherwise. Detached — we never wait on it.
+fn launch_terminal(command: Vec<String>) -> Result<(), String> {
+    if std::process::Command::new("wt.exe").args(&command).spawn().is_ok() {
+        return Ok(());
+    }
+    // conhost.exe <program> <args…> opens a classic console window.
+    std::process::Command::new("conhost.exe")
+        .args(&command)
+        .spawn()
+        .map_err(|e| format!("cannot open a terminal window: {e}"))?;
+    Ok(())
+}
+
+/// Open an interactive shell into a service's container in a real terminal
+/// (Windows Terminal / conhost) — no embedded pty for MVP. The wpcli
+/// companion is not a running service: it uses `run --rm` under the
+/// "tools" profile instead of `exec`.
+#[tauri::command]
+pub fn project_open_shell(app: AppHandle, name: String, service: String) -> Result<(), String> {
+    if !service.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
+        || service.is_empty()
+    {
+        return Err(format!("invalid service name '{service}'"));
+    }
+    let entry = find_entry(&app, &name)?;
+    let config = read_config(&entry.path);
+
+    let compose_tail: Vec<String> = if service == "wpcli" {
+        ["--profile", "tools", "run", "--rm", "wpcli", "sh", "-c", SHELL_PICK]
+            .map(String::from)
+            .to_vec()
+    } else {
+        ["exec", service.as_str(), "sh", "-c", SHELL_PICK]
+            .map(String::from)
+            .to_vec()
+    };
+
+    let mut command: Vec<String> = match effective_location(&entry, config.as_ref()) {
+        Location::Ntfs { windows_path } => {
+            let file = compose_file(&windows_path);
+            let mut c = vec!["docker".to_string(), "compose".to_string(), "-f".to_string(), file];
+            c.extend(compose_tail);
+            c
+        }
+        Location::Wsl { distro, linux_path } => {
+            let mut c = vec![
+                "wsl.exe".to_string(),
+                "-d".to_string(),
+                distro,
+                "--cd".to_string(),
+                linux_path,
+                "--".to_string(),
+                "docker".to_string(),
+                "compose".to_string(),
+                "-f".to_string(),
+                ".dockberth/docker-compose.yml".to_string(),
+            ];
+            c.extend(compose_tail);
+            c
+        }
+    };
+    launch_terminal(std::mem::take(&mut command))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteOptions {
+    pub remove_containers: bool,
+    pub remove_hosts: bool,
+    /// Destructive: `compose down -v` deletes named volumes (DB data).
+    pub remove_volumes: bool,
+    pub remove_dockberth_dir: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteResult {
+    /// False when the user declined the hosts-removal UAC prompt.
+    pub hosts_removed: bool,
+}
+
+/// Delete a project. Project code is NEVER touched. The registry entry is
+/// removed last, only after the selected steps succeeded — a hosts-UAC
+/// decline is tolerated (reported), any other failure keeps the project.
+#[tauri::command]
+pub async fn project_delete(
+    app: AppHandle,
+    name: String,
+    options: DeleteOptions,
+) -> Result<DeleteResult, String> {
+    let entry = find_entry(&app, &name)?;
+
+    if options.remove_containers || options.remove_volumes {
+        // No compose file (already cleaned) → nothing to bring down.
+        if Path::new(&compose_file(&entry.path)).is_file() {
+            let action: &[&str] = if options.remove_volumes {
+                &["down", "-v"]
+            } else {
+                &["down"]
+            };
+            compose_exec(&app, &name, action).await?;
+        }
+    }
+
+    let mut hosts_removed = true;
+    if options.remove_hosts {
+        hosts_removed = hosts::hosts_remove(format!("{name}.test")).await?;
+    }
+
+    if options.remove_dockberth_dir {
+        let dir = Path::new(&entry.path).join(".dockberth");
+        if dir.exists() {
+            fs::remove_dir_all(&dir)
+                .map_err(|e| format!("cannot delete .dockberth folder: {e}"))?;
+        }
+    }
+
+    let remaining = registry::load_entries(&app)?
+        .into_iter()
+        .filter(|e| e.name != name)
+        .collect();
+    registry::save_entries(&app, remaining)?;
+    Ok(DeleteResult { hosts_removed })
 }
 
 /// Open the project folder in Explorer (works for UNC WSL paths too).

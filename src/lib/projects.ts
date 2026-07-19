@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, Channel } from "@tauri-apps/api/core";
 
 /** Mirrors of the Rust types in src-tauri/src/{projects,registry,preset,proxy}.rs. */
 
@@ -211,3 +211,30 @@ export const openProjectFolder = (name: string) =>
   invoke<void>("project_open_folder", { name });
 export const openProjectEditor = (name: string) =>
   invoke<void>("project_open_editor", { name });
+export const openProjectShell = (name: string, service: string) =>
+  invoke<void>("project_open_shell", { name, service });
+
+export type LogEvent =
+  | { type: "line"; line: string; stderr: boolean }
+  | { type: "end"; error: string | null };
+
+export const logsStart = (
+  name: string,
+  services: string[],
+  channel: Channel<LogEvent>,
+) => invoke<void>("logs_start", { name, services, channel });
+export const logsStop = (name: string) => invoke<void>("logs_stop", { name });
+
+export interface DeleteOptions {
+  removeContainers: boolean;
+  removeHosts: boolean;
+  removeVolumes: boolean;
+  removeDockberthDir: boolean;
+}
+
+export interface DeleteResult {
+  hostsRemoved: boolean;
+}
+
+export const deleteProject = (name: string, options: DeleteOptions) =>
+  invoke<DeleteResult>("project_delete", { name, options });

@@ -142,6 +142,12 @@ function App() {
           onDismissError={() => setActionError(null)}
           onFixHosts={() => void handleFixHosts()}
           fixingHosts={fixingHosts}
+          onDeleted={(message) => {
+            notify(message);
+            setSelectedName("");
+            void refresh();
+            void pollNow();
+          }}
         />
       ) : (
         <EmptyState onNewProject={() => setWizardOpen(true)} />

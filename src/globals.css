@@ -50,6 +50,10 @@
   --color-border-subtle: var(--border-subtle);
   --color-border-strong: var(--border-strong);
   --color-primary-hover: var(--primary-hover);
+  --color-log-background: var(--log-background);
+  --color-dim: var(--dim);
+  --color-log-purple: var(--log-purple);
+  --color-log-green: var(--log-green);
 
   --font-sans: "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -108,6 +112,12 @@
   --border-subtle: #1f2833; /* input borders, small chips */
   --border-strong: #3a4756; /* hovered control borders */
   --primary-hover: #5fd0e0; /* hovered primary buttons */
+
+  /* Logs viewer (mockup screen 2) */
+  --log-background: #070a0e;
+  --dim: #3d4b58; /* log timestamps, deep-muted text */
+  --log-purple: #b48ce0; /* php-fpm-style service tint */
+  --log-green: #7fb069; /* db-style service tint */
 
   --radius: 8px;
 }

@@ -8,6 +8,7 @@ import {
   Play,
   RotateCw,
   Square,
+  Trash2,
   TriangleAlert,
   X,
 } from "lucide-react";
@@ -16,9 +17,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DeleteProjectDialog } from "@/components/DeleteProjectDialog";
+import { LogsTab } from "@/components/LogsTab";
 import { OverviewTab } from "@/components/OverviewTab";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useProjectServices } from "@/hooks/useProjectServices";
@@ -41,6 +45,7 @@ interface ProjectViewProps {
   onDismissError: () => void;
   onFixHosts: () => void;
   fixingHosts: boolean;
+  onDeleted: (message: string) => void;
 }
 
 const ACTION_BUTTON = "h-[34px] gap-[7px] rounded-md text-[12.5px] shadow-none";
@@ -56,12 +61,14 @@ export function ProjectView({
   onDismissError,
   onFixHosts,
   fixingHosts,
+  onDeleted,
 }: ProjectViewProps) {
   const services = useProjectServices(project);
   const domain = projectDomain(project.name);
   const active = status === "running" || status === "starting";
   const busy = pendingAction !== null;
   const [hostsBannerDismissed, setHostsBannerDismissed] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => setHostsBannerDismissed(false), [project.name]);
 
@@ -157,6 +164,14 @@ export function ProjectView({
                     <Code className="size-3.5" />
                     Open in VS Code
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onSelect={() => setDeleteOpen(true)}
+                  >
+                    <Trash2 className="size-3.5" />
+                    Remove project…
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -220,12 +235,10 @@ export function ProjectView({
         </div>
 
         <TabsContent value="overview" className="min-h-0 flex-1">
-          <OverviewTab project={project} services={services} />
+          <OverviewTab project={project} status={status} services={services} />
         </TabsContent>
         <TabsContent value="logs" className="min-h-0 flex-1">
-          <div className="flex h-full items-center justify-center text-xs text-faint">
-            Logs — coming soon
-          </div>
+          <LogsTab project={project} status={status} services={services} />
         </TabsContent>
         <TabsContent value="services" className="min-h-0 flex-1">
           <div className="flex h-full items-center justify-center text-xs text-faint">
@@ -233,6 +246,13 @@ export function ProjectView({
           </div>
         </TabsContent>
       </Tabs>
+
+      <DeleteProjectDialog
+        project={project}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onDeleted={onDeleted}
+      />
     </main>
   );
 }
