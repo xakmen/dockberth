@@ -1,5 +1,13 @@
 import { useEffect, useRef } from "react";
-import { MoreHorizontal, Plus, RefreshCw, Search, Wrench } from "lucide-react";
+import {
+  Bug,
+  MoreHorizontal,
+  Plus,
+  RefreshCw,
+  Search,
+  Settings,
+  Wrench,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -31,6 +39,8 @@ interface SidebarProps {
   onNewProject: () => void;
   onRepairHosts: () => void;
   onCheckUpdates: () => void;
+  onOpenSettings: () => void;
+  onReportBug: () => void;
   docker: DockerStatus | null;
   dockerLoading: boolean;
   proxy: ProxyStatus | null;
@@ -48,6 +58,8 @@ export function Sidebar({
   onNewProject,
   onRepairHosts,
   onCheckUpdates,
+  onOpenSettings,
+  onReportBug,
   docker,
   dockerLoading,
   proxy,
@@ -184,6 +196,14 @@ export function Sidebar({
                 <span className="ml-auto font-mono text-[10px] text-faint">
                   v{appVersion}
                 </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onReportBug}>
+                <Bug className="size-3.5" />
+                Report a bug
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onOpenSettings}>
+                <Settings className="size-3.5" />
+                Settings
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

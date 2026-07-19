@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { NewProjectDialog } from "@/components/NewProjectDialog";
 import { ProjectView, type ProjectAction } from "@/components/ProjectView";
+import { ReportBugDialog } from "@/components/ReportBugDialog";
+import { SettingsDialog } from "@/components/SettingsDialog";
 import { Sidebar } from "@/components/Sidebar";
+import { TelemetryDialog } from "@/components/TelemetryDialog";
 import { UpdateBanner } from "@/components/UpdateBanner";
 import { useContextMenuGuard } from "@/hooks/useContextMenuGuard";
 import { useDockerStatus } from "@/hooks/useDockerStatus";
@@ -14,11 +17,15 @@ import {
   projectDomain,
   proxyEnsure,
   restartProject,
+  settingsGet,
+  settingsSet,
   startProject,
   stopProject,
   type ProjectStatus,
   type ProxyStatus,
+  type Settings,
 } from "@/lib/projects";
+import { initTelemetry, setTelemetryProjectNames } from "@/lib/telemetry";
 
 const PROXY_HEAL_BACKOFF_MS = 30_000;
 const TRANSITION_TIMEOUT_MS = 30_000;
@@ -53,6 +60,37 @@ function App() {
   const [fixingHosts, setFixingHosts] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [telemetryPrompt, setTelemetryPrompt] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+
+  // Telemetry: load the stored choice; first launch shows the one-time
+  // opt-in dialog. Sentry only ever initializes with explicit consent.
+  useEffect(() => {
+    void settingsGet()
+      .then((loaded) => {
+        setSettings(loaded);
+        initTelemetry(loaded.telemetryEnabled);
+        if (!loaded.telemetryPrompted) setTelemetryPrompt(true);
+      })
+      .catch((err: unknown) => console.error("settings load failed:", err));
+  }, []);
+
+  // Project names are anonymized to project-1..n in crash reports.
+  useEffect(() => {
+    setTelemetryProjectNames(projects.map((p) => p.name));
+  }, [projects]);
+
+  const applyTelemetry = useCallback((enabled: boolean) => {
+    const next: Settings = { telemetryEnabled: enabled, telemetryPrompted: true };
+    setSettings(next);
+    setTelemetryPrompt(false);
+    initTelemetry(enabled);
+    void settingsSet(next).catch((err: unknown) =>
+      console.error("settings save failed:", err),
+    );
+  }, []);
 
   const notify = useCallback((message: string) => {
     setToast(message);
@@ -228,6 +266,8 @@ function App() {
             if (!found) notify("Dockberth is up to date");
           })
         }
+        onOpenSettings={() => setSettingsOpen(true)}
+        onReportBug={() => setReportOpen(true)}
         onRepairHosts={() =>
           void hostsRepair()
             .then((ok) => {
@@ -273,6 +313,20 @@ function App() {
           void refresh();
           void pollNow();
         }}
+      />
+      <TelemetryDialog open={telemetryPrompt} onChoice={applyTelemetry} />
+      {settings ? (
+        <SettingsDialog
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          settings={settings}
+          onToggleTelemetry={applyTelemetry}
+        />
+      ) : null}
+      <ReportBugDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        notify={notify}
       />
       <UpdateBanner status={updater.status} onInstall={() => void updater.install()} />
       {toast ? (

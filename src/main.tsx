@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import * as Sentry from "@sentry/react";
 import App from "./App";
 
 import "@fontsource/inter/400.css";
@@ -13,6 +14,16 @@ import "./globals.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    {/* Captures render crashes when telemetry is enabled; with Sentry
+        disabled it still acts as a plain error boundary. */}
+    <Sentry.ErrorBoundary
+      fallback={
+        <div className="flex h-screen items-center justify-center p-8 text-sm text-muted-foreground">
+          Something went wrong — please restart Dockberth.
+        </div>
+      }
+    >
+      <App />
+    </Sentry.ErrorBoundary>
   </React.StrictMode>,
 );

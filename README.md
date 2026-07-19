@@ -26,6 +26,12 @@ no terminal required.
 - **Docker status at a glance** — see whether the daemon is up before you hit
   start
 
+## Privacy
+
+Crash reporting is **opt-in** and heavily scrubbed (no usernames, project
+names or paths ever leave your machine) — see
+[docs/TELEMETRY.md](docs/TELEMETRY.md) for exactly what is sent.
+
 ## License
 
 **The Dockberth core is MIT-licensed, forever.** See [LICENSE](LICENSE).

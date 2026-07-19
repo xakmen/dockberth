@@ -226,6 +226,27 @@ export const hostsEnsure = (domain: string) =>
   invoke<boolean>("hosts_ensure", { domain });
 export const hostsRepair = () => invoke<boolean>("hosts_repair");
 
+export interface Settings {
+  telemetryEnabled: boolean;
+  telemetryPrompted: boolean;
+}
+
+export interface Diagnostics {
+  appVersion: string;
+  tauriVersion: string;
+  windowsVersion: string;
+  docker: string;
+  wslDistros: string[];
+  projectCount: number;
+  presets: string[];
+}
+
+export const settingsGet = () => invoke<Settings>("settings_get");
+export const settingsSet = (settings: Settings) =>
+  invoke<void>("settings_set", { settings });
+export const diagnosticsCollect = () =>
+  invoke<Diagnostics>("diagnostics_collect");
+
 export type ScaffoldEvent =
   | { type: "line"; line: string; pulling: boolean }
   | { type: "done" }
