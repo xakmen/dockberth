@@ -1,24 +1,17 @@
 import { useEffect } from "react";
 
-/** Suppress the WebView's native context menu (Reload/Print/…) app-wide.
- * Exceptions where the native menu stays useful:
- * - editable targets (inputs, textareas, contenteditable) — paste/spellcheck
- * - a non-empty text selection — copying from the logs viewer
- * Mounted once in App. */
+/** Suppress the WebView's native context menu app-wide, unconditionally —
+ * including editable targets, spellcheck, and text selections. The app will
+ * provide its own custom context menu on top of this; native copy/paste
+ * shortcuts (Ctrl+C/V/X) keep working. Mounted once in App. */
 export function useContextMenuGuard() {
   useEffect(() => {
     const handler = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      const editable = target?.closest(
-        "input, textarea, [contenteditable='true'], [contenteditable='']",
-      );
-      const selection = window.getSelection();
-      const hasSelection = selection !== null && !selection.isCollapsed;
-      if (!editable && !hasSelection) {
-        event.preventDefault();
-      }
+      event.preventDefault();
     };
-    document.addEventListener("contextmenu", handler);
-    return () => document.removeEventListener("contextmenu", handler);
+    // Capture phase so no other listener sees the event first.
+    document.addEventListener("contextmenu", handler, { capture: true });
+    return () =>
+      document.removeEventListener("contextmenu", handler, { capture: true });
   }, []);
 }
