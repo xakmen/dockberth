@@ -1,0 +1,101 @@
+:root {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #e6e6e6;
+  background-color: #16181d;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.dashboard {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.dashboard__header {
+  margin-bottom: 2rem;
+}
+
+.dashboard__header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.75rem;
+}
+
+.dashboard__header p {
+  margin: 0;
+  color: #9aa0ab;
+}
+
+.status-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #2a2e37;
+  border-radius: 10px;
+  background-color: #1d2026;
+}
+
+.status-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.status-card__label {
+  margin: 0;
+  font-weight: 600;
+}
+
+.status-card__detail {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #9aa0ab;
+  overflow-wrap: anywhere;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot--running {
+  background-color: #3fb950;
+}
+
+.status-dot--down {
+  background-color: #f85149;
+}
+
+.status-dot--checking {
+  background-color: #d29922;
+}
+
+button {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid #2a2e37;
+  border-radius: 8px;
+  background-color: #262a32;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover:enabled {
+  background-color: #2e333d;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

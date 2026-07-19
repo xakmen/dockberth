@@ -1,0 +1,20 @@
+# Dockberth global proxy: Traefik
+#
+# Placeholder — service definition lands in a follow-up change.
+#
+# One Traefik container per machine (not per project). It owns host ports
+# 80/443 and routes `<name>.test` to the right project container via Docker
+# labels discovered through the Docker provider.
+#
+# Planned setup:
+#   traefik   official traefik image
+#             - ports 80:80, 443:443 (and the dashboard on a local-only port)
+#             - docker provider, constrained to containers with dockberth labels
+#             - mounts //./pipe/docker_engine or /var/run/docker.sock depending
+#               on where the daemon lives
+#             - local TLS for *.test via a generated CA (mkcert-style), later
+#
+# All project services join the external `dockberth` network created alongside
+# this proxy stack.
+
+# services: {}

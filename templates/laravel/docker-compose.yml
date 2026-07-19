@@ -1,0 +1,18 @@
+# Dockberth template: Laravel
+#
+# Placeholder — service definitions land in a follow-up change.
+#
+# Planned services:
+#   app       php-fpm (per-project PHP version), Laravel code bind-mounted
+#   web       nginx, serves /public, routed through the global Traefik proxy
+#             via labels (Host(`{{name}}.test`))
+#   db        mysql or mariadb, data in a named volume
+#   redis     cache/queues
+#   mailpit   local mail catcher
+#
+# Template variables use {{placeholder}} syntax and are substituted by the app
+# when the compose file is generated into <project>/.dockberth/.
+#
+# All services join the external `dockberth` network so Traefik can reach them.
+
+# services: {}
