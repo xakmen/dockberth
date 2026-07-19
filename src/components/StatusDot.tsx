@@ -4,6 +4,8 @@ import type { ProjectStatus } from "@/lib/projects";
 const DOT_COLOR: Record<ProjectStatus, string> = {
   running: "bg-status-running",
   starting: "bg-status-starting",
+  stopping: "bg-status-starting",
+  partial: "bg-status-partial",
   stopped: "bg-status-stopped",
   error: "bg-status-error",
 };

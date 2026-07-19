@@ -40,6 +40,7 @@
   --color-status-stopped: var(--status-stopped);
   --color-status-starting: var(--status-starting);
   --color-status-error: var(--status-error);
+  --color-status-partial: var(--status-partial);
   --color-status-running-text: var(--status-running-text);
   --color-warning-text: var(--warning-text);
 
@@ -102,6 +103,7 @@
   --status-starting: #e0a63e;
   --status-stopped: #49535e;
   --status-error: #ef5f52;
+  --status-partial: #a89563; /* amber-gray: some services down */
   --status-running-text: #5ed57f; /* badge text on the running pill */
   --warning-text: #d8b878; /* text on amber hint banners */
 
@@ -132,6 +134,27 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-size: 13px;
+  }
+
+  /* Tailwind v4 preflight sets `cursor: default` on buttons — restore
+   * pointer feedback for everything interactive (incl. Radix widgets,
+   * which render as elements with ARIA roles). */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  [role="menuitem"],
+  [role="tab"],
+  [role="option"],
+  [role="checkbox"]:not(:disabled),
+  [role="switch"]:not(:disabled),
+  [role="combobox"]:not(:disabled),
+  label:has(> input[type="checkbox"]),
+  a {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
   }
 }
 

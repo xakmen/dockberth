@@ -2,7 +2,18 @@ import { invoke, Channel } from "@tauri-apps/api/core";
 
 /** Mirrors of the Rust types in src-tauri/src/{projects,registry,preset,proxy}.rs. */
 
-export type ProjectStatus = "running" | "starting" | "stopped" | "error";
+/** Single source of truth for a project's lifecycle state.
+ * From polling (factual): running | stopped | partial.
+ * Transitional (command in flight, overlaid client-side): starting | stopping.
+ * error: a lifecycle command timed out, or (per service row) a container
+ * crashed / is restart-looping. */
+export type ProjectStatus =
+  | "stopped"
+  | "starting"
+  | "running"
+  | "stopping"
+  | "partial"
+  | "error";
 
 export type BaseKind = "php" | "node";
 

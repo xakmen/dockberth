@@ -109,7 +109,7 @@ export function LogsTab({
     () => [...new Set(services.map((s) => s.name))],
     [services],
   );
-  const active = status === "running" || status === "starting";
+  const active = status !== "stopped" && status !== "error";
 
   // One streaming session per (project, service filter); the follower is
   // killed on unmount / filter change / project stop.

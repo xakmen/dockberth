@@ -4,6 +4,7 @@ import {
   ArrowUpRight,
   Code,
   FolderOpen,
+  Loader2,
   MoreHorizontal,
   Play,
   RotateCw,
@@ -38,8 +39,8 @@ export type ProjectAction = "start" | "stop" | "restart";
 
 interface ProjectViewProps {
   project: ProjectInfo;
+  /** Display status from the single source of truth in App. */
   status: ProjectStatus;
-  pendingAction: ProjectAction | null;
   onAction: (action: ProjectAction) => void;
   actionError: string | null;
   onDismissError: () => void;
@@ -55,7 +56,6 @@ const OUTLINE_ACTION =
 export function ProjectView({
   project,
   status,
-  pendingAction,
   onAction,
   actionError,
   onDismissError,
@@ -65,12 +65,24 @@ export function ProjectView({
 }: ProjectViewProps) {
   const services = useProjectServices(project);
   const domain = projectDomain(project.name);
-  const active = status === "running" || status === "starting";
-  const busy = pendingAction !== null;
+  // Buttons derive from the same status as badge and sidebar dot:
+  // running/partial/error → Stop + Restart; stopped → Start;
+  // starting/stopping → a single disabled button with a spinner.
+  const transitional = status === "starting" || status === "stopping";
+  const showStopRestart =
+    status === "running" || status === "partial" || status === "error";
   const [hostsBannerDismissed, setHostsBannerDismissed] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => setHostsBannerDismissed(false), [project.name]);
+
+  const downServices = services
+    .filter((s) => s.state !== "running")
+    .map((s) => s.name);
+  const badgeTitle =
+    status === "partial" && downServices.length > 0
+      ? `Not running: ${downServices.join(", ")}`
+      : undefined;
 
   return (
     <main className="flex min-w-0 flex-1 flex-col">
@@ -84,7 +96,7 @@ export function ProjectView({
             <h1 className="text-[22px] leading-none font-semibold tracking-[-0.2px]">
               {project.name}
             </h1>
-            <StatusBadge status={status} />
+            <StatusBadge status={status} title={badgeTitle} />
             {/* Display shows the bare domain; the target appends the
                 preset's openPath (e.g. Vendure → /dashboard). */}
             <a
@@ -100,36 +112,42 @@ export function ProjectView({
             </a>
             <div className="flex-1" />
             <div className="flex items-center gap-2">
-              {active ? (
+              {transitional ? (
+                <Button
+                  variant="outline"
+                  disabled
+                  className={`${ACTION_BUTTON} ${OUTLINE_ACTION} px-3.5`}
+                >
+                  <Loader2 className="size-3.5 animate-spin" />
+                  {status === "stopping" ? "Stopping…" : "Starting…"}
+                </Button>
+              ) : showStopRestart ? (
                 <>
                   {/* Deviation from mockup: Stop is an outline button */}
                   <Button
                     variant="outline"
-                    disabled={busy}
                     onClick={() => onAction("stop")}
                     className={`${ACTION_BUTTON} ${OUTLINE_ACTION} px-3.5`}
                   >
                     <Square className="size-3 fill-current" />
-                    {pendingAction === "stop" ? "Stopping…" : "Stop"}
+                    Stop
                   </Button>
                   <Button
                     variant="outline"
-                    disabled={busy || status === "starting"}
                     onClick={() => onAction("restart")}
                     className={`${ACTION_BUTTON} ${OUTLINE_ACTION} px-3.5`}
                   >
                     <RotateCw className="size-3.5" />
-                    {pendingAction === "restart" ? "Restarting…" : "Restart"}
+                    Restart
                   </Button>
                 </>
               ) : (
                 <Button
-                  disabled={busy}
                   onClick={() => onAction("start")}
                   className={`${ACTION_BUTTON} px-4 font-semibold hover:bg-primary-hover`}
                 >
                   <Play className="size-3 fill-current" />
-                  {pendingAction === "start" ? "Starting…" : "Start"}
+                  Start
                 </Button>
               )}
               <DropdownMenu>

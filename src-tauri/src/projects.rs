@@ -551,6 +551,9 @@ pub async fn projects_status(app: AppHandle) -> Result<StatusSnapshot, String> {
             .push(map_container_state(state.trim()));
     }
 
+    // Factual states only — transitional starting/stopping are overlaid by
+    // the frontend while a lifecycle command is in flight (single source
+    // of truth lives there).
     let projects = per_project
         .into_iter()
         .map(|(name, states)| {
@@ -559,7 +562,7 @@ pub async fn projects_status(app: AppHandle) -> Result<StatusSnapshot, String> {
             } else if states.iter().all(|s| *s == "stopped") {
                 "stopped"
             } else {
-                "starting"
+                "partial"
             };
             (name, status.to_string())
         })
@@ -568,6 +571,26 @@ pub async fn projects_status(app: AppHandle) -> Result<StatusSnapshot, String> {
         projects,
         proxy_running,
     })
+}
+
+/// Row-level service state: crashes (non-zero exit) and restart loops
+/// surface as "error" so the Services card can tint them.
+fn service_state(state: &str, status_text: &str) -> &'static str {
+    match state {
+        "restarting" => "error",
+        "exited" => {
+            let code = status_text
+                .trim()
+                .strip_prefix("Exited (")
+                .and_then(|s| s.split(')').next())
+                .and_then(|n| n.parse::<i32>().ok());
+            match code {
+                Some(0) | None => "stopped",
+                Some(_) => "error",
+            }
+        }
+        other => map_container_state(other),
+    }
 }
 
 /// Per-service container states for one project (Services card).
@@ -585,7 +608,7 @@ pub async fn project_services(app: AppHandle, name: String) -> Result<Vec<Servic
             "--filter",
             &filter,
             "--format",
-            "{{.Label \"com.docker.compose.service\"}}|{{.State}}|{{.Image}}",
+            "{{.Label \"com.docker.compose.service\"}}|{{.State}}|{{.Status}}|{{.Image}}",
         ],
     )
     .await?;
@@ -593,10 +616,13 @@ pub async fn project_services(app: AppHandle, name: String) -> Result<Vec<Servic
     let mut services: Vec<ServiceState> = stdout
         .lines()
         .filter_map(|line| {
-            let mut parts = line.splitn(3, '|');
+            let mut parts = line.splitn(4, '|');
+            let service = parts.next()?.to_string();
+            let state = parts.next()?.trim();
+            let status_text = parts.next()?.trim();
             Some(ServiceState {
-                name: parts.next()?.to_string(),
-                state: map_container_state(parts.next()?.trim()).to_string(),
+                name: service,
+                state: service_state(state, status_text).to_string(),
                 image: parts.next().unwrap_or("").to_string(),
             })
         })

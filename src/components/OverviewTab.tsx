@@ -11,13 +11,27 @@ import {
   type ServiceState,
 } from "@/lib/projects";
 
-const CARD = "gap-3 rounded-lg border-border bg-card px-5 py-[18px] shadow-none";
+// min-w-0: grid items default to min-width:auto and refuse to shrink below
+// their content width — that pushed cards past the viewport at ~900px.
+const CARD =
+  "min-w-0 gap-3 rounded-lg border-border bg-card px-5 py-[18px] shadow-none";
 
 function Row({ label, value, mono = true }: { label: string; value: string; mono?: boolean }) {
+  // The value wins the space fight: labels are decorative and may truncate,
+  // values (credentials, versions) must stay readable.
   return (
-    <div className="flex justify-between gap-4">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={mono ? "truncate font-mono text-[12.5px]" : "truncate font-medium"}>
+    <div className="flex min-w-0 justify-between gap-4">
+      <span title={label} className="min-w-0 truncate text-muted-foreground">
+        {label}
+      </span>
+      <span
+        title={value}
+        className={
+          mono
+            ? "max-w-[70%] shrink-0 truncate font-mono text-[12.5px]"
+            : "max-w-[70%] shrink-0 truncate font-medium"
+        }
+      >
         {value}
       </span>
     </div>
@@ -36,7 +50,7 @@ export function OverviewTab({
   const runningCount = services.filter((s) => s.state === "running").length;
   const config = project.config;
   const db = config ? dbConnection(config) : null;
-  const projectRunning = status === "running";
+  const projectRunning = status === "running" || status === "partial";
 
   // WP-CLI is a `tools`-profile companion, not a running service — show it
   // as an extra row with a Shell button (compose run --rm wpcli).
@@ -49,7 +63,10 @@ export function OverviewTab({
       : services;
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-2 grid-rows-[auto_auto_1fr] gap-4 overflow-y-auto px-7 pt-5 pb-7">
+    // Rows are content-sized on purpose: forcing the last row to the
+    // remaining height (1fr) made tall Services lists spill past the card
+    // border at narrow window sizes. The wrapper scrolls vertically.
+    <div className="grid h-full min-h-0 grid-cols-2 content-start gap-4 overflow-y-auto px-7 pt-5 pb-7">
       {/* Stack */}
       <Card className={CARD}>
         <div className="section-label">Stack</div>
@@ -130,26 +147,36 @@ export function OverviewTab({
       ) : null}
 
       {/* Services */}
-      <Card className={`${CARD} col-span-2 min-h-0 gap-1.5`}>
+      <Card className={`${CARD} col-span-2 gap-1.5`}>
         <div className="section-label pb-2">
           Services ·{" "}
           {runningCount > 0 ? `${runningCount} running` : services.length}
         </div>
-        <div className="flex flex-col">
+        <div className="flex min-w-0 flex-col">
           {rows.map((service, index) => (
             <div
               key={service.name}
               className={
                 index < rows.length - 1
-                  ? "flex items-center gap-3 border-b border-secondary px-1 py-[9px]"
-                  : "flex items-center gap-3 px-1 py-[9px]"
+                  ? "flex min-w-0 items-center gap-3 border-b border-secondary px-1 py-[9px]"
+                  : "flex min-w-0 items-center gap-3 px-1 py-[9px]"
               }
             >
               <StatusDot status={service.state} size={7} />
-              <span className="w-[110px] font-mono text-[12.5px]">
+              <span
+                title={service.name}
+                className={
+                  service.state === "error"
+                    ? "w-[110px] shrink-0 truncate font-mono text-[12.5px] text-status-error"
+                    : "w-[110px] shrink-0 truncate font-mono text-[12.5px]"
+                }
+              >
                 {service.name}
               </span>
-              <span className="flex-1 truncate font-mono text-[11.5px] text-faint">
+              <span
+                title={service.image}
+                className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-faint"
+              >
                 {service.image}
                 {service.tools ? " · tools profile" : ""}
               </span>
@@ -157,7 +184,7 @@ export function OverviewTab({
                 variant="outline"
                 disabled={service.tools ? !projectRunning : service.state !== "running"}
                 onClick={() => void openProjectShell(project.name, service.name)}
-                className="h-auto rounded-[6px] border-input bg-transparent px-3 py-1 text-[11.5px] font-normal text-muted-foreground shadow-none hover:border-border-strong hover:bg-transparent hover:text-foreground dark:bg-transparent dark:hover:bg-transparent"
+                className="h-auto shrink-0 rounded-[6px] border-input bg-transparent px-3 py-1 text-[11.5px] font-normal text-muted-foreground shadow-none hover:border-border-strong hover:bg-transparent hover:text-foreground dark:bg-transparent dark:hover:bg-transparent"
               >
                 Shell
               </Button>
