@@ -64,26 +64,30 @@ helper.
   tokens. **No hardcoded hex values in components** — if a mockup color has no
   token yet, add it to `src/globals.css` first and reference it by name.
 
-## MVP scope
+## Status
 
-1. Dashboard with Docker daemon status (done: `docker_version` command +
-   status card).
-2. Create project from a template (Laravel / WordPress / Vendure) →
-   render compose into `<project>/.dockberth/`.
-3. Start/stop projects (`docker compose up -d` / `down`), with the WSL2 vs
-   NTFS execution split.
-4. Global Traefik proxy lifecycle (install/start/stop) + `dockberth` Docker
-   network.
-5. Hosts sync for `<name>.test` via the elevated helper.
+**MVP shipped in v0.1.0** (July 2026): project onboarding + WordPress
+scaffolding, start/stop with WSL2/NTFS split, Traefik proxy with
+self-heal, hosts managed block, Logs tab, per-service Shell, delete flow,
+signed auto-updates, opt-in crash reporting. Releases: `docs/RELEASING.md`.
+Telemetry rules: `docs/TELEMETRY.md`.
 
-Out of scope for MVP: TLS certificates, remote Docker hosts, macOS/Linux
-builds, template marketplace, per-service log UI.
+Known deferred decisions:
+- Elevation rework (kill repeated UAC): wildcard `.test` DNS via NRPT +
+  dnsmasq container (preferred) vs a Windows service. Not decided yet.
+- Post-MVP roadmap: TLS for `*.test`, Laravel/Vendure scaffolding
+  (preset `scaffold` field is data — no code needed), Yii/CodeIgniter/
+  OpenCart/Drupal presets, macOS/Linux ports (v1.1+).
 
 ## Commands
 
 - `npm run tauri dev` — run the app in dev mode.
 - `npm run build` — typecheck (`tsc`) and build the frontend.
-- `cargo check` in `src-tauri/` — fast Rust validation.
+- `cargo test` in `src-tauri/` — Rust unit tests (renderers, presets,
+  hosts parser, scrubbers); keep green, CI runs exactly this.
+- `npm run changelog` — regenerate CHANGELOG.md (git-cliff).
+- `npm version X.Y.Z` — version bump; syncs Cargo.toml/tauri.conf.json
+  via `scripts/sync-version.mjs`. Never edit those versions by hand.
 
 ## Licensing
 

@@ -34,6 +34,15 @@ and force-push your branch.
   commands wrap external CLIs and return raw results.
 - Match the existing code style around whatever you touch.
 
+## Commit messages
+
+We use [Conventional Commits](https://www.conventionalcommits.org)
+(`feat:`, `fix:`, `docs:`, `chore:`, …) — CHANGELOG.md is generated from
+them, and `feat`/`fix` land in release notes while `chore`/`ci`/`test`
+are filtered out. Keep a **blank line between the summary and the body**.
+If you commit from VS Code, enable **Git: Always Sign Off** in settings
+so the DCO trailer is added automatically.
+
 ## Getting started
 
 ```sh

@@ -125,9 +125,23 @@ No local toolchain is required, only Docker.
   generation, hosts, start) is identical to onboarding an existing
   project.
 
+## Hosts management
+
+All Dockberth entries live inside one managed block in the Windows hosts
+file (`# BEGIN/END DOCKBERTH MANAGED BLOCK`); everything outside it is
+user territory, preserved byte-for-byte. There is a single write path:
+the full new content is rendered and sanity-checked in Rust (lossless
+roundtrip proof, abort on unterminated block, no-op without changes) and
+the elevated PowerShell script only does backup → tmp → move. Content
+logic never runs elevated — the pre-rework implementation filtered inside
+PowerShell and could truncate the whole file on a locked read.
+
+A rework replacing per-change UAC prompts entirely (wildcard `.test` DNS
+via NRPT + a dnsmasq container vs a small Windows service) is designed
+but not yet decided.
+
 ## To be written
 
-- Template rendering pipeline and variable model
-- Project registry storage format and location
-- Traefik network topology and TLS story for `*.test`
-- Elevated helper protocol and safety constraints
+- Traefik TLS story for `*.test`
+- Project registry format guarantees (currently: `projects.json` in the
+  app data dir + per-project `.dockberth/config.json` as source of truth)
