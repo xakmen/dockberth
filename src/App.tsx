@@ -65,6 +65,15 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
 
+  // Fade out the boot preloader from index.html once the app shell mounts.
+  useEffect(() => {
+    const el = document.getElementById("preloader");
+    if (!el) return;
+    el.classList.add("preloader-done");
+    const timer = window.setTimeout(() => el.remove(), 300);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   // Telemetry: load the stored choice; first launch shows the one-time
   // opt-in dialog. Sentry only ever initializes with explicit consent.
   useEffect(() => {
