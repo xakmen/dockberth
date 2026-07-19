@@ -83,8 +83,17 @@ export function Sidebar({
       {/* Logo + app name + version chip */}
       <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
         <div className="flex size-7 shrink-0 items-center justify-center rounded-md border border-accent-border bg-accent">
-          {/* Boat-hull glyph from the mockup */}
-          <div className="h-2 w-3 rounded-b-[4px] border-[1.5px] border-t-0 border-primary" />
+          {/* Berth + container glyph, same paths as design/icon/icon.svg */}
+          <svg viewBox="0 0 48 48" className="size-4 text-primary" aria-hidden="true">
+            <path
+              d="M13 12v13a11 11 0 0 0 22 0V12"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="4.5"
+              strokeLinecap="round"
+            />
+            <rect x="18.5" y="19" width="11" height="11" rx="2.5" fill="currentColor" />
+          </svg>
         </div>
         <div className="text-[14.5px] font-semibold">Dockberth</div>
         <div className="rounded-sm border border-border-subtle bg-muted px-1.5 py-0.5 font-mono text-[10px] text-faint">
