@@ -26,6 +26,11 @@ trim = true
 [git]
 conventional_commits = true
 filter_unconventional = true
+commit_preprocessors = [
+  # Some commits lack the blank line between summary and body, which the
+  # conventional parser rejects ("Incorrect body syntax") — reinsert it.
+  { pattern = '\A([^\n]+)\n([^\n])', replace = "${1}\n\n${2}" },
+]
 commit_parsers = [
   { message = "^feat", group = "<!-- 0 -->Features" },
   { message = "^fix", group = "<!-- 1 -->Fixes" },
