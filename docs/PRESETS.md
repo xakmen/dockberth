@@ -59,7 +59,8 @@ the right precedence position (see below).
   // ids: "mariadb-11" | "mysql-8.4" | "postgres-16"; omit for "no db".
   "defaults": { "phpVersion": "8.3", "db": "mariadb-11", "redis": true },
 
-  // Container port Traefik routes <name>.test to. For the PHP base this
+  // Container port Traefik routes <name>.<suffix> to (suffix from
+  // Settings, default "test"). For the PHP base this
   // is always 8080 (serversideup/php). Node projects may override it per
   // project in the dialog.
   "appPort": 8080,
@@ -78,7 +79,7 @@ the right precedence position (see below).
   // user should know to wire their existing code to the environment.
   "notes": "Point DB_HOST at `db` in your .env.",
 
-  // Optional path appended to http://<name>.test by "Open in browser"
+  // Optional path appended to http://<name>.<suffix> by "Open in browser"
   // and the header domain link (Vendure: "/dashboard"). Default "/".
   "openPath": "/",
 
@@ -136,7 +137,8 @@ from your preset via `extraServices`.
    (assert the rendered compose contains/lacks the right lines).
 3. `npm run tauri dev`, point the new-project dialog at a real project of
    that framework: the dialog must show your `displayName` and `notes`.
-4. Create + start the project and check `http://<name>.test` responds.
+4. Create + start the project and check `http://<name>.test` (or your
+   configured suffix) responds.
 
 That's it — the dialog fields, the Overview cards, and start/stop routing
 all derive from the preset's `base`; nothing else to wire.

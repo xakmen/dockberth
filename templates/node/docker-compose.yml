@@ -35,7 +35,7 @@ services:
       - dockberth
     labels:
       traefik.enable: "true"
-      traefik.http.routers.{project}.rule: Host(`{project}.test`)
+      traefik.http.routers.{project}.rule: Host(`{domain}`)
       traefik.http.services.{project}.loadbalancer.server.port: "{app_port}"
 #[section:db]
     depends_on:

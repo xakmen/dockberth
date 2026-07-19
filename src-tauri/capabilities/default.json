@@ -11,7 +11,7 @@
     "opener:default",
     {
       "identifier": "opener:allow-open-url",
-      "allow": [{ "url": "http://*.test" }, { "url": "http://*.test/*" }]
+      "allow": [{ "url": "http://*" }, { "url": "http://*/*" }]
     }
   ]
 }

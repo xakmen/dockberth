@@ -1,5 +1,6 @@
 mod diagnostics;
 mod docker;
+mod domain;
 /// pub: the hosts renderer is exercised by examples/hosts_render.rs.
 pub mod hosts;
 mod logs;
@@ -41,6 +42,7 @@ pub fn run() {
             projects::project_stop,
             projects::project_restart,
             projects::projects_status,
+            projects::apply_domain_suffix,
             projects::project_services,
             projects::project_open_folder,
             projects::project_open_editor,

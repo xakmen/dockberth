@@ -11,11 +11,13 @@ use tauri::AppHandle;
 use tauri_plugin_shell::ShellExt;
 
 use crate::docker::{map_container_state, run_docker_checked};
+use crate::domain;
 use crate::hosts;
 use crate::preset::{self, BaseKind, Preset};
 use crate::registry::{
     self, derive_location, Database, Location, ProjectConfig, RegistryEntry,
 };
+use crate::settings;
 use crate::template;
 use crate::wsl;
 
@@ -96,11 +98,11 @@ pub(crate) fn effective_location(
         .unwrap_or_else(|| derive_location(&entry.path))
 }
 
-fn entry_to_info(entry: &RegistryEntry) -> ProjectInfo {
+fn entry_to_info(entry: &RegistryEntry, suffix: &str) -> ProjectInfo {
     let config = read_config(&entry.path);
     let location = effective_location(entry, config.as_ref());
-    let hosts_ok =
-        hosts::domain_present(&format!("{}.test", entry.name)).unwrap_or(false);
+    let hosts_ok = hosts::domain_present(&domain::project_domain(&entry.name, suffix))
+        .unwrap_or(false);
     let open_url_path = config
         .as_ref()
         .and_then(|c| c.preset.as_deref())
@@ -150,7 +152,11 @@ pub fn detect_project(path: String) -> Result<DetectResult, String> {
 /// All registered projects, enriched with per-project config and hosts state.
 #[tauri::command]
 pub fn project_list(app: AppHandle) -> Result<Vec<ProjectInfo>, String> {
-    Ok(registry::load_entries(&app)?.iter().map(entry_to_info).collect())
+    let suffix = settings::load().domain_suffix;
+    Ok(registry::load_entries(&app)?
+        .iter()
+        .map(|e| entry_to_info(e, &suffix))
+        .collect())
 }
 
 #[derive(Deserialize)]
@@ -250,7 +256,10 @@ pub async fn project_create(app: AppHandle, args: CreateArgs) -> Result<ProjectI
     };
     let is_wsl = wsl_uid_gid.is_some();
     let (uid, gid) = wsl_uid_gid.unwrap_or((0, 0));
-    let compose = template::render_project_compose(preset, &config, is_wsl, uid, gid)?;
+    let suffix = settings::load().domain_suffix;
+    let project_domain = domain::project_domain(&args.name, &suffix);
+    let compose =
+        template::render_project_compose(preset, &config, &project_domain, is_wsl, uid, gid)?;
 
     let dockberth_dir = dir.join(".dockberth");
     fs::create_dir_all(&dockberth_dir)
@@ -285,9 +294,9 @@ pub async fn project_create(app: AppHandle, args: CreateArgs) -> Result<ProjectI
     registry::save_entries(&app, entries)?;
 
     // Hosts entry — best-effort; hosts_ok=false surfaces a retry banner.
-    let _ = hosts::hosts_ensure(app.clone(), format!("{}.test", args.name)).await;
+    let _ = hosts::hosts_ensure(app.clone(), project_domain).await;
 
-    Ok(entry_to_info(&entry))
+    Ok(entry_to_info(&entry, &suffix))
 }
 
 /// Single routing point for every compose invocation:
@@ -453,7 +462,9 @@ pub async fn project_delete(
 
     let mut hosts_removed = true;
     if options.remove_hosts {
-        hosts_removed = hosts::hosts_remove(&app, format!("{name}.test")).await?;
+        let suffix = settings::load().domain_suffix;
+        hosts_removed =
+            hosts::hosts_remove(&app, domain::project_domain(&name, &suffix)).await?;
     }
 
     if options.remove_dockberth_dir {
@@ -582,6 +593,96 @@ pub async fn projects_status(app: AppHandle) -> Result<StatusSnapshot, String> {
     Ok(StatusSnapshot {
         projects,
         proxy_running,
+    })
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApplySuffixResult {
+    /// False when the user declined the hosts UAC prompt. The setting
+    /// stays applied — the existing "Fix hosts" recovery path finishes
+    /// the job later.
+    pub hosts_synced: bool,
+    /// Per-project re-render/restart failures (best-effort; the rest of
+    /// the migration still runs).
+    pub errors: Vec<String>,
+}
+
+/// Re-render one project's compose file from its stored config with the
+/// new domain — same overwrite model as the proxy compose deploy.
+async fn rerender_project(
+    app: &AppHandle,
+    entry: &RegistryEntry,
+    suffix: &str,
+) -> Result<(), String> {
+    let config =
+        read_config(&entry.path).ok_or("missing or unreadable .dockberth/config.json")?;
+    let preset_id = config.preset.clone().ok_or("config has no preset")?;
+    let preset = preset::find_preset(&preset_id)
+        .ok_or_else(|| format!("unknown preset '{preset_id}'"))?;
+    let (is_wsl, uid, gid) = match effective_location(entry, Some(&config)) {
+        Location::Ntfs { .. } => (false, 0, 0),
+        Location::Wsl { distro, .. } => {
+            let (uid, gid) = wsl::default_uid_gid(app, &distro).await?;
+            (true, uid, gid)
+        }
+    };
+    let project_domain = domain::project_domain(&entry.name, suffix);
+    let compose =
+        template::render_project_compose(preset, &config, &project_domain, is_wsl, uid, gid)?;
+    fs::write(
+        Path::new(&entry.path).join(".dockberth").join("docker-compose.yml"),
+        compose,
+    )
+    .map_err(|e| format!("cannot write docker-compose.yml: {e}"))?;
+    Ok(())
+}
+
+/// Apply a new domain suffix (Settings → Apply, after the confirmation
+/// dialog): persist the setting first (every later step is retryable),
+/// re-render every project's compose file, resync the hosts managed block
+/// in ONE batch write (single UAC — old-suffix entries vanish because the
+/// block is fully recomputed), then `up -d` currently running projects so
+/// Traefik picks up the new labels. Stopped projects just get the new
+/// compose on disk.
+#[tauri::command]
+pub async fn apply_domain_suffix(
+    app: AppHandle,
+    suffix: String,
+) -> Result<ApplySuffixResult, String> {
+    if !domain::is_valid_domain_suffix(&suffix) {
+        return Err(format!("invalid domain suffix '{suffix}'"));
+    }
+    let mut new_settings = settings::load();
+    new_settings.domain_suffix = suffix.clone();
+    settings::save(new_settings)?;
+
+    let mut errors = Vec::new();
+    for entry in registry::load_entries(&app)? {
+        if let Err(e) = rerender_project(&app, &entry, &suffix).await {
+            errors.push(format!("{}: {e}", entry.name));
+        }
+    }
+
+    let hosts_synced = hosts::hosts_repair(app.clone()).await?;
+
+    match projects_status(app.clone()).await {
+        Ok(snapshot) => {
+            for (name, status) in snapshot.projects {
+                if status == "stopped" {
+                    continue;
+                }
+                if let Err(e) = compose_exec(&app, &name, &["up", "-d"]).await {
+                    errors.push(format!("{name}: {e}"));
+                }
+            }
+        }
+        Err(e) => errors.push(format!("cannot list running projects: {e}")),
+    }
+
+    Ok(ApplySuffixResult {
+        hosts_synced,
+        errors,
     })
 }
 

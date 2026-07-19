@@ -12,11 +12,14 @@ import { useDockerStatus } from "@/hooks/useDockerStatus";
 import { useProjects } from "@/hooks/useProjects";
 import { useUpdater } from "@/hooks/useUpdater";
 import {
+  applyDomainSuffix,
+  DEFAULT_DOMAIN_SUFFIX,
   hostsEnsure,
   hostsRepair,
   projectDomain,
   proxyEnsure,
   restartProject,
+  setDomainSuffix,
   settingsGet,
   settingsSet,
   startProject,
@@ -79,6 +82,7 @@ function App() {
   useEffect(() => {
     void settingsGet()
       .then((loaded) => {
+        setDomainSuffix(loaded.domainSuffix);
         setSettings(loaded);
         initTelemetry(loaded.telemetryEnabled);
         if (!loaded.telemetryPrompted) setTelemetryPrompt(true);
@@ -91,15 +95,23 @@ function App() {
     setTelemetryProjectNames(projects.map((p) => p.name));
   }, [projects]);
 
-  const applyTelemetry = useCallback((enabled: boolean) => {
-    const next: Settings = { telemetryEnabled: enabled, telemetryPrompted: true };
-    setSettings(next);
-    setTelemetryPrompt(false);
-    initTelemetry(enabled);
-    void settingsSet(next).catch((err: unknown) =>
-      console.error("settings save failed:", err),
-    );
-  }, []);
+  const applyTelemetry = useCallback(
+    (enabled: boolean) => {
+      const next: Settings = {
+        domainSuffix: DEFAULT_DOMAIN_SUFFIX,
+        ...(settings ?? {}),
+        telemetryEnabled: enabled,
+        telemetryPrompted: true,
+      };
+      setSettings(next);
+      setTelemetryPrompt(false);
+      initTelemetry(enabled);
+      void settingsSet(next).catch((err: unknown) =>
+        console.error("settings save failed:", err),
+      );
+    },
+    [settings],
+  );
 
   const notify = useCallback((message: string) => {
     setToast(message);
@@ -243,6 +255,30 @@ function App() {
     }
   };
 
+  // Settings → Apply for the domain suffix: one backend command does the
+  // whole migration (re-render composes, batch hosts sync, restart running
+  // projects). The setting stays applied even when hosts sync is declined —
+  // the existing Repair/Fix hosts paths recover from that.
+  const handleApplyDomainSuffix = useCallback(
+    async (suffix: string) => {
+      const result = await applyDomainSuffix(suffix);
+      setDomainSuffix(suffix);
+      setSettings((prev) => (prev ? { ...prev, domainSuffix: suffix } : prev));
+      await refresh();
+      void pollNow();
+      if (!result.hostsSynced) {
+        notify(
+          "Hosts update was declined — use “Repair hosts entries” to finish",
+        );
+      } else if (result.errors.length > 0) {
+        notify(`Suffix changed, with issues: ${result.errors[0]}`);
+      } else {
+        notify(`Domain suffix changed to .${suffix}`);
+      }
+    },
+    [refresh, pollNow, notify],
+  );
+
   const handleFixHosts = async () => {
     if (!selected) return;
     setFixingHosts(true);
@@ -330,6 +366,7 @@ function App() {
           onOpenChange={setSettingsOpen}
           settings={settings}
           onToggleTelemetry={applyTelemetry}
+          onApplyDomainSuffix={handleApplyDomainSuffix}
         />
       ) : null}
       <ReportBugDialog

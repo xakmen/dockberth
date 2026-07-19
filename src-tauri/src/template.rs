@@ -93,11 +93,14 @@ fn resolve_common(config: &ProjectConfig, preset: &Preset, uid: u32, gid: u32) -
     }
 }
 
-/// Render the compose file for a project. `wsl` selects the unprivileged
-/// WSL variant; `uid`/`gid` are the distro user's ids (ignored for NTFS).
+/// Render the compose file for a project. `domain` is the full routed
+/// domain (`domain::project_domain`, e.g. "shop.test"); `wsl` selects the
+/// unprivileged WSL variant; `uid`/`gid` are the distro user's ids
+/// (ignored for NTFS).
 pub fn render_project_compose(
     preset: &Preset,
     config: &ProjectConfig,
+    domain: &str,
     wsl: bool,
     uid: u32,
     gid: u32,
@@ -137,6 +140,7 @@ pub fn render_project_compose(
                 PHP_TEMPLATE,
                 &[
                     ("project", config.name.as_str()),
+                    ("domain", domain),
                     ("php_version", php_version.as_str()),
                     ("webroot", webroot.as_str()),
                     ("app_port", r.app_port.as_str()),
@@ -182,6 +186,7 @@ pub fn render_project_compose(
                 NODE_TEMPLATE,
                 &[
                     ("project", config.name.as_str()),
+                    ("domain", domain),
                     ("node_version", node_version.as_str()),
                     ("start_command", start_command.as_str()),
                     ("app_port", r.app_port.as_str()),
@@ -263,8 +268,9 @@ mod tests {
     fn renders_laravel_ntfs_with_root_workaround() {
         let preset = find_preset("laravel").unwrap();
         let cfg = config("laravel", Some(Database::Mariadb11), true);
-        let out = render_project_compose(preset, &cfg, false, 0, 0).unwrap();
+        let out = render_project_compose(preset, &cfg, "aquashop.test", false, 0, 0).unwrap();
         assert!(out.contains("name: dockberth-aquashop"));
+        assert!(out.contains("rule: Host(`aquashop.test`)"));
         assert!(out.contains("image: serversideup/php:8.3-fpm-nginx"));
         assert!(out.contains("NGINX_WEBROOT: /var/www/html/public"));
         assert!(out.contains("user: root"));
@@ -283,8 +289,12 @@ mod tests {
     fn renders_wordpress_wsl_with_wpcli_and_root_docroot() {
         let preset = find_preset("wordpress").unwrap();
         let cfg = config("wordpress", Some(Database::Mariadb11), false);
-        let out = render_project_compose(preset, &cfg, true, 1000, 1000).unwrap();
+        let out =
+            render_project_compose(preset, &cfg, "aquashop.dev.mycompany", true, 1000, 1000)
+                .unwrap();
         assert!(out.contains("NGINX_WEBROOT: /var/www/html\n"));
+        // Custom suffix lands verbatim in the Traefik rule.
+        assert!(out.contains("rule: Host(`aquashop.dev.mycompany`)"));
         assert!(out.contains("wpcli:"));
         assert!(out.contains("image: wordpress:cli"));
         assert!(out.contains("profiles: [\"tools\"]"));
@@ -301,7 +311,8 @@ mod tests {
     fn renders_vendure_wsl_with_postgres() {
         let preset = find_preset("vendure").unwrap();
         let cfg = config("vendure", Some(Database::Postgres16), false);
-        let out = render_project_compose(preset, &cfg, true, 1000, 1000).unwrap();
+        let out = render_project_compose(preset, &cfg, "aquashop.test", true, 1000, 1000).unwrap();
+        assert!(out.contains("rule: Host(`aquashop.test`)"));
         assert!(out.contains("image: node:22-bookworm-slim"));
         assert!(out.contains("command: [\"sh\", \"-lc\", \"npm run dev\"]"));
         assert!(out.contains("image: postgres:16"));
@@ -319,7 +330,7 @@ mod tests {
         let mut cfg = config("node-generic", None, false);
         cfg.start_command = Some("npm install && node server.js".into());
         cfg.app_port = Some(4173);
-        let out = render_project_compose(preset, &cfg, false, 0, 0).unwrap();
+        let out = render_project_compose(preset, &cfg, "node-generic.test", false, 0, 0).unwrap();
         assert!(out.contains("- /app/node_modules"));
         assert!(out.contains("npm install && node server.js"));
         assert!(out.contains("server.port: \"4173\""));
@@ -335,26 +346,26 @@ mod tests {
         let preset = find_preset("laravel").unwrap();
         let mut bad = config("laravel", Some(Database::Mysql84), false);
         bad.name = "Aqua Shop".into();
-        assert!(render_project_compose(preset, &bad, false, 0, 0).is_err());
+        assert!(render_project_compose(preset, &bad, "x.test", false, 0, 0).is_err());
 
         let mut bad_php = config("laravel", Some(Database::Mysql84), false);
         bad_php.php_version = Some("7.4".into());
-        assert!(render_project_compose(preset, &bad_php, false, 0, 0).is_err());
+        assert!(render_project_compose(preset, &bad_php, "x.test", false, 0, 0).is_err());
 
         let no_db = config("laravel", None, false);
-        assert!(render_project_compose(preset, &no_db, false, 0, 0).is_err());
+        assert!(render_project_compose(preset, &no_db, "x.test", false, 0, 0).is_err());
 
         let node = find_preset("node-generic").unwrap();
         let mut bad_cmd = config("node-generic", None, false);
         bad_cmd.start_command = Some("echo \"hi\"".into());
-        assert!(render_project_compose(node, &bad_cmd, false, 0, 0).is_err());
+        assert!(render_project_compose(node, &bad_cmd, "x.test", false, 0, 0).is_err());
     }
 
     #[test]
     fn wordpress_ntfs_builds_for_extensions_with_root_workaround() {
         let preset = find_preset("wordpress").unwrap();
         let cfg = config("wordpress", Some(Database::Mariadb11), false);
-        let out = render_project_compose(preset, &cfg, false, 0, 0).unwrap();
+        let out = render_project_compose(preset, &cfg, "aquashop.test", false, 0, 0).unwrap();
         // Extensions force a local build even on NTFS…
         assert!(out.contains("dockerfile: app.Dockerfile"));
         assert!(!out.contains("image: serversideup"));

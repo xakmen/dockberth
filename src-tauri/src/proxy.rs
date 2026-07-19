@@ -1,8 +1,10 @@
 //! Global Traefik proxy lifecycle.
 //!
 //! One Traefik v3 container per machine (`dockberth-proxy`) owns host ports
-//! 80/443 and routes `<name>.test` to project containers on the external
-//! `dockberth` Docker network. The compose file is deployed from the
+//! 80/443 and routes `<name>.<suffix>` domains (suffix from settings,
+//! default "test") to project containers on the external `dockberth`
+//! Docker network. The proxy itself is suffix-agnostic — the routed domain
+//! is baked into each project's compose file as a Traefik label. The compose file is deployed from the
 //! embedded template into the app data directory and started with
 //! `docker compose up -d`.
 

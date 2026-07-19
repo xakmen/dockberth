@@ -9,13 +9,20 @@
 
 fn main() {
     let desired: Vec<String> = std::env::args().skip(1).collect();
+    // Suffix is taken from the first domain's tail (default "test") so
+    // custom-suffix behavior can be exercised too.
+    let suffix = desired
+        .first()
+        .and_then(|d| d.split_once('.').map(|(_, s)| s.to_string()))
+        .unwrap_or("test".to_string());
     let registered: Vec<String> = desired
         .iter()
-        .filter_map(|d| d.strip_suffix(".test").map(String::from))
+        .filter_map(|d| d.split_once('.').map(|(name, _)| name.to_string()))
         .collect();
+    let suffixes = vec![suffix, "test".to_string()];
     let raw = std::fs::read_to_string(r"C:\Windows\System32\drivers\etc\hosts")
         .unwrap_or_default();
-    match dockberth_lib::hosts::render_hosts(&raw, &desired, &registered) {
+    match dockberth_lib::hosts::render_hosts(&raw, &desired, &registered, &suffixes) {
         Ok(out) => {
             eprintln!("changed: {}", out.changed);
             print!("{}", out.content);

@@ -5,8 +5,8 @@
 Dockberth is a Windows desktop app that spins up ready-to-code local
 environments for Laravel, WordPress, and Vendure/Node projects. It generates
 Docker Compose files from templates, routes every project through a global
-Traefik proxy as `https://<name>.test`, and keeps your hosts file in sync —
-no terminal required.
+Traefik proxy as `https://<name>.test` (suffix configurable), and keeps your
+hosts file in sync — no terminal required.
 
 ## Features (MVP)
 
@@ -15,8 +15,9 @@ no terminal required.
   OpenCart, Drupal — post-dogfooding)
 - **Create new WordPress projects from scratch** — only Docker required,
   no local PHP/WP-CLI (Laravel and Vendure scaffolding coming next)
-- **Pretty local domains** — every project served as `<name>.test` through a
-  shared Traefik proxy on ports 80/443
+- **Pretty local domains** — every project served as `<name>.<suffix>`
+  (default `test`, configurable in Settings) through a shared Traefik proxy
+  on ports 80/443
 - **Hosts file managed for you** via a small elevated helper (single UAC
   prompt, surgical edits only)
 - **WSL2-aware** — projects living inside a WSL2 distro run compose in-distro

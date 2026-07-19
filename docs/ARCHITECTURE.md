@@ -29,7 +29,8 @@ out to external CLIs (`docker`, `wsl.exe`) and return raw results.
 - Docker is driven through the CLI (via the Tauri shell plugin), never an SDK
   or the Engine API.
 - One global Traefik proxy container owns ports 80/443 and routes
-  `<name>.test` domains to project containers via Docker labels.
+  `<name>.<suffix>` domains (suffix configurable in Settings, default
+  `test`) to project containers via Docker labels.
 - Generated compose files live in `.dockberth/` inside each user project;
   `templates/` in this repo are the sources they are rendered from.
 - Projects on WSL2 paths run compose inside the distro via
@@ -76,8 +77,8 @@ family) specialized by a **framework preset** (a small JSON file) — see
   sections.
 
 **Traefik wiring:** every app container carries labels routing
-`Host(<name>.test)` to the preset's `appPort` (8080 for PHP, per-project
-for Node, 3000 default). The proxy only sees containers on the external
+`Host(<name>.<suffix>)` to the preset's `appPort` (8080 for PHP,
+per-project for Node, 3000 default). The proxy only sees containers on the external
 `dockberth` network (`exposedByDefault=false`).
 
 **node_modules asymmetry (Node base):** on NTFS projects the generated

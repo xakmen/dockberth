@@ -158,8 +158,71 @@ export const PRESET_LABEL: Record<string, string> = {
   "node-generic": "Node.js app",
 };
 
+export const DEFAULT_DOMAIN_SUFFIX = "test";
+
+/** Module-level mirror of settings.domainSuffix. App syncs it whenever
+ * settings load or change; every consumer re-renders through App's
+ * settings state, so reads after a change always see the new value. */
+let currentDomainSuffix = DEFAULT_DOMAIN_SUFFIX;
+
+export function setDomainSuffix(suffix: string): void {
+  currentDomainSuffix = isValidDomainSuffix(suffix)
+    ? suffix
+    : DEFAULT_DOMAIN_SUFFIX;
+}
+
 export function projectDomain(name: string): string {
-  return `${name}.test`;
+  return `${name}.${currentDomainSuffix}`;
+}
+
+/** Mirror of the Rust-side validator (src-tauri/src/domain.rs): dot-
+ * separated labels of [a-z0-9]([a-z0-9-]*[a-z0-9])?, each ≤63 chars. */
+export function isValidDomainSuffix(suffix: string): boolean {
+  return (
+    suffix.length > 0 &&
+    suffix
+      .split(".")
+      .every(
+        (label) =>
+          label.length <= 63 && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label),
+      )
+  );
+}
+
+export interface DomainSuffixNote {
+  level: "warning" | "info";
+  message: string;
+}
+
+/** HSTS-preloaded real gTLDs: browsers force HTTPS on every subdomain. */
+const HSTS_PRELOADED_TLDS = ["dev", "app", "page", "new", "day", "foo"];
+
+/** Non-blocking note for known-problematic suffixes, matched on the last
+ * label so `internal.dev` warns the same way `dev` does. */
+export function domainSuffixNote(suffix: string): DomainSuffixNote | null {
+  const lastLabel = suffix.split(".").pop() ?? "";
+  if (HSTS_PRELOADED_TLDS.includes(lastLabel)) {
+    return {
+      level: "warning",
+      message:
+        "Browsers force HTTPS on this suffix (HSTS-preloaded domain); sites will not load without certificates.",
+    };
+  }
+  if (lastLabel === "local") {
+    return {
+      level: "warning",
+      message:
+        "Conflicts with mDNS/Bonjour; resolution is unreliable on Windows.",
+    };
+  }
+  if (lastLabel === "localhost") {
+    return {
+      level: "info",
+      message:
+        "Browsers resolve *.localhost to loopback automatically; hosts file entries are only needed for CLI tools like curl.",
+    };
+  }
+  return null;
 }
 
 /** Mirror of the Rust-side sanitizer: lowercase, [a-z0-9-]. */
@@ -229,7 +292,20 @@ export const hostsRepair = () => invoke<boolean>("hosts_repair");
 export interface Settings {
   telemetryEnabled: boolean;
   telemetryPrompted: boolean;
+  /** Local-domain suffix (`<name>.<suffix>`), no leading dot. Changing it
+   * must go through applyDomainSuffix, not settingsSet. */
+  domainSuffix: string;
 }
+
+export interface ApplySuffixResult {
+  /** False = the hosts UAC prompt was declined; the setting is applied
+   * anyway and "Repair hosts" / per-project "Fix hosts" finish the job. */
+  hostsSynced: boolean;
+  errors: string[];
+}
+
+export const applyDomainSuffix = (suffix: string) =>
+  invoke<ApplySuffixResult>("apply_domain_suffix", { suffix });
 
 export interface Diagnostics {
   appVersion: string;

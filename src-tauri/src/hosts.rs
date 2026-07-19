@@ -1,4 +1,5 @@
-//! Windows hosts-file management for `<project>.test` domains.
+//! Windows hosts-file management for `<project>.<suffix>` domains
+//! (suffix from settings, default "test").
 //!
 //! All Dockberth entries live inside one managed block:
 //!
@@ -22,7 +23,9 @@
 
 use tauri::AppHandle;
 
+use crate::domain;
 use crate::registry;
+use crate::settings;
 use crate::template::is_valid_project_name;
 
 const HOSTS_PATH: &str = r"C:\Windows\System32\drivers\etc\hosts";
@@ -33,10 +36,23 @@ const BEGIN_MARKER: &str =
     "# BEGIN DOCKBERTH MANAGED BLOCK — do not edit between these markers";
 const END_MARKER: &str = "# END DOCKBERTH MANAGED BLOCK";
 
-fn is_valid_domain(domain: &str) -> bool {
+/// `<name>.<suffix>` where the name passes project-name validation.
+fn is_valid_domain(domain: &str, suffix: &str) -> bool {
     domain
-        .strip_suffix(".test")
+        .strip_suffix(suffix)
+        .and_then(|d| d.strip_suffix('.'))
         .is_some_and(is_valid_project_name)
+}
+
+/// Suffixes whose stray lines we migrate into the managed block: the
+/// current one plus the historical default — legacy `.test` lines written
+/// before a suffix change still belong to us.
+fn stray_suffixes(current: &str) -> Vec<String> {
+    let mut suffixes = vec![current.to_string()];
+    if current != domain::DEFAULT_SUFFIX {
+        suffixes.push(domain::DEFAULT_SUFFIX.to_string());
+    }
+    suffixes
 }
 
 fn line_maps_domain(line: &str, domain: &str) -> bool {
@@ -86,10 +102,11 @@ fn split_keep_eol(raw: &str) -> Vec<(String, String)> {
 }
 
 /// A stray Dockberth line outside the block (written by the pre-block
-/// implementation): exactly `127.0.0.1 <name>.test` for a REGISTERED
-/// project. Foreign .test lines (unknown names, extra hosts, comments)
-/// are not ours and stay untouched.
-fn is_stray_entry(content: &str, registered_names: &[String]) -> bool {
+/// implementation, or left behind by a suffix change): exactly
+/// `127.0.0.1 <name>.<suffix>` for a REGISTERED project and a known
+/// suffix. Foreign lines (unknown names, extra hosts, comments) are not
+/// ours and stay untouched.
+fn is_stray_entry(content: &str, registered_names: &[String], suffixes: &[String]) -> bool {
     let mut tokens = content.split_whitespace();
     if tokens.next() != Some("127.0.0.1") {
         return false;
@@ -100,8 +117,11 @@ fn is_stray_entry(content: &str, registered_names: &[String]) -> bool {
     if tokens.next().is_some() {
         return false; // extra tokens/comment — not a line we wrote
     }
-    host.strip_suffix(".test")
-        .is_some_and(|name| registered_names.iter().any(|n| n == name))
+    suffixes.iter().any(|suffix| {
+        host.strip_suffix(suffix.as_str())
+            .and_then(|h| h.strip_suffix('.'))
+            .is_some_and(|name| registered_names.iter().any(|n| n == name))
+    })
 }
 
 pub struct HostsRender {
@@ -110,13 +130,14 @@ pub struct HostsRender {
 }
 
 /// Compute the new hosts content: managed block reflecting `desired`
-/// (sorted, deduped), stray registered entries migrated into the block,
-/// everything else preserved byte-for-byte. Pure — unit-tested without
-/// elevation.
+/// (sorted, deduped), stray registered entries (any suffix in
+/// `suffixes`) migrated into the block, everything else preserved
+/// byte-for-byte. Pure — unit-tested without elevation.
 pub fn render_hosts(
     raw: &str,
     desired: &[String],
     registered_names: &[String],
+    suffixes: &[String],
 ) -> Result<HostsRender, String> {
     let bom = raw.starts_with('\u{feff}');
     let body = raw.strip_prefix('\u{feff}').unwrap_or(raw);
@@ -190,7 +211,8 @@ pub fn render_hosts(
 
     // Migrate strays: drop them from user territory (the block, computed
     // from the registry-derived desired set, is their new home).
-    let keep = |(content, _): &(String, String)| !is_stray_entry(content, registered_names);
+    let keep =
+        |(content, _): &(String, String)| !is_stray_entry(content, registered_names, suffixes);
     before.retain(keep);
     after.retain(keep);
 
@@ -287,9 +309,10 @@ fn registered_names(app: &AppHandle) -> Result<Vec<String>, String> {
 }
 
 fn registered_domains(app: &AppHandle) -> Result<Vec<String>, String> {
+    let suffix = settings::load().domain_suffix;
     Ok(registered_names(app)?
         .into_iter()
-        .map(|n| format!("{n}.test"))
+        .map(|n| domain::project_domain(&n, &suffix))
         .collect())
 }
 
@@ -297,14 +320,15 @@ fn registered_domains(app: &AppHandle) -> Result<Vec<String>, String> {
 /// dumb elevated script back up the current file, write a tmp file and
 /// move it over hosts. No content logic ever runs elevated.
 async fn sync_to(app: &AppHandle, desired: Vec<String>) -> Result<String, String> {
+    let suffix = settings::load().domain_suffix;
     for domain in &desired {
-        if !is_valid_domain(domain) {
+        if !is_valid_domain(domain, &suffix) {
             return Err(format!("invalid domain '{domain}'"));
         }
     }
     let names = registered_names(app)?;
     let raw = read_hosts()?;
-    let render = render_hosts(&raw, &desired, &names)?;
+    let render = render_hosts(&raw, &desired, &names, &stray_suffixes(&suffix))?;
     if !render.changed {
         return Ok(render.content); // identical — no write, no UAC
     }
@@ -325,7 +349,7 @@ async fn sync_to(app: &AppHandle, desired: Vec<String>) -> Result<String, String
 /// entry is present afterwards (false = the user declined elevation).
 #[tauri::command]
 pub async fn hosts_ensure(app: AppHandle, domain: String) -> Result<bool, String> {
-    if !is_valid_domain(&domain) {
+    if !is_valid_domain(&domain, &settings::load().domain_suffix) {
         return Err(format!("invalid domain '{domain}'"));
     }
     let mut desired = registered_domains(&app)?;
@@ -339,7 +363,7 @@ pub async fn hosts_ensure(app: AppHandle, domain: String) -> Result<bool, String
 /// Remove `domain` from the managed block. Returns whether the entry is
 /// absent afterwards (false = the user declined elevation).
 pub async fn hosts_remove(app: &AppHandle, domain: String) -> Result<bool, String> {
-    if !is_valid_domain(&domain) {
+    if !is_valid_domain(&domain, &settings::load().domain_suffix) {
         return Err(format!("invalid domain '{domain}'"));
     }
     let desired: Vec<String> = registered_domains(app)?
@@ -368,11 +392,17 @@ mod tests {
         list.iter().map(|s| s.to_string()).collect()
     }
 
+    /// Stray-suffix set for the default configuration (suffix = "test").
+    fn sfx() -> Vec<String> {
+        names(&["test"])
+    }
+
     const USER_FILE: &str = "# Copyright Microsoft\r\n127.0.0.1 localhost\r\n192.168.1.5 nas.local\r\n";
 
     #[test]
     fn appends_block_preserving_user_lines_crlf() {
-        let out = render_hosts(USER_FILE, &names(&["app.test"]), &names(&["app"])).unwrap();
+        let out =
+            render_hosts(USER_FILE, &names(&["app.test"]), &names(&["app"]), &sfx()).unwrap();
         assert!(out.changed);
         assert!(out.content.starts_with(USER_FILE));
         assert!(out.content.contains(&format!("{BEGIN_MARKER}\r\n127.0.0.1 app.test\r\n{END_MARKER}\r\n")));
@@ -383,7 +413,8 @@ mod tests {
         let raw = format!(
             "top\r\n{BEGIN_MARKER}\r\n127.0.0.1 old.test\r\n{END_MARKER}\r\nbottom\r\n"
         );
-        let out = render_hosts(&raw, &names(&["b.test", "a.test", "a.test"]), &[]).unwrap();
+        let out =
+            render_hosts(&raw, &names(&["b.test", "a.test", "a.test"]), &[], &sfx()).unwrap();
         assert_eq!(
             out.content,
             format!("top\r\n{BEGIN_MARKER}\r\n127.0.0.1 a.test\r\n127.0.0.1 b.test\r\n{END_MARKER}\r\nbottom\r\n")
@@ -395,7 +426,7 @@ mod tests {
         let raw = format!(
             "u1\r\n{BEGIN_MARKER}\r\n127.0.0.1 x.test\r\n{END_MARKER}\r\nu2\r\n{BEGIN_MARKER}\r\n127.0.0.1 y.test\r\n{END_MARKER}\r\nu3\r\n"
         );
-        let out = render_hosts(&raw, &names(&["z.test"]), &[]).unwrap();
+        let out = render_hosts(&raw, &names(&["z.test"]), &[], &sfx()).unwrap();
         assert_eq!(
             out.content,
             format!("u1\r\n{BEGIN_MARKER}\r\n127.0.0.1 z.test\r\n{END_MARKER}\r\nu2\r\nu3\r\n")
@@ -405,7 +436,8 @@ mod tests {
     #[test]
     fn migrates_stray_registered_entry_and_keeps_foreign_test_lines() {
         let raw = "127.0.0.1 stray.test\r\n127.0.0.1 foreign.test\r\n10.0.0.1 other.test extra\r\n";
-        let out = render_hosts(raw, &names(&["stray.test"]), &names(&["stray"])).unwrap();
+        let out =
+            render_hosts(raw, &names(&["stray.test"]), &names(&["stray"]), &sfx()).unwrap();
         // stray migrated into the block; foreign lines untouched
         assert!(!out.content.starts_with("127.0.0.1 stray.test"));
         assert!(out.content.contains("127.0.0.1 foreign.test\r\n"));
@@ -414,9 +446,70 @@ mod tests {
     }
 
     #[test]
+    fn renders_block_with_custom_suffix() {
+        let out = render_hosts(
+            "",
+            &names(&["shop.dev.mycompany", "blog.dev.mycompany"]),
+            &names(&["shop", "blog"]),
+            &names(&["dev.mycompany", "test"]),
+        )
+        .unwrap();
+        assert_eq!(
+            out.content,
+            format!("{BEGIN_MARKER}\r\n127.0.0.1 blog.dev.mycompany\r\n127.0.0.1 shop.dev.mycompany\r\n{END_MARKER}\r\n")
+        );
+    }
+
+    #[test]
+    fn suffix_change_migrates_legacy_test_strays() {
+        // Written by an older version with the .test default, now the
+        // suffix is "dev.mycompany": the legacy stray for a registered
+        // project is absorbed; the foreign .test line survives.
+        let raw = "127.0.0.1 shop.test\r\n127.0.0.1 foreign.test\r\n";
+        let out = render_hosts(
+            raw,
+            &names(&["shop.dev.mycompany"]),
+            &names(&["shop"]),
+            &names(&["dev.mycompany", "test"]),
+        )
+        .unwrap();
+        assert!(!out.content.contains("127.0.0.1 shop.test"));
+        assert!(out.content.contains("127.0.0.1 foreign.test\r\n"));
+        assert!(out.content.contains(&format!(
+            "{BEGIN_MARKER}\r\n127.0.0.1 shop.dev.mycompany\r\n{END_MARKER}"
+        )));
+    }
+
+    #[test]
+    fn stray_detection_requires_full_label_match() {
+        // "shop.xtest" must NOT count as a stray for suffix "test".
+        assert!(!is_stray_entry(
+            "127.0.0.1 shop.xtest",
+            &names(&["shop"]),
+            &sfx()
+        ));
+        assert!(is_stray_entry("127.0.0.1 shop.test", &names(&["shop"]), &sfx()));
+    }
+
+    #[test]
+    fn validates_domains_against_suffix() {
+        assert!(is_valid_domain("app.test", "test"));
+        assert!(is_valid_domain("app.dev.mycompany", "dev.mycompany"));
+        assert!(!is_valid_domain("app.test", "dev.mycompany"));
+        assert!(!is_valid_domain("apptest", "test"));
+        assert!(!is_valid_domain(".test", "test"));
+    }
+
+    #[test]
+    fn stray_suffix_set_contains_current_and_legacy_default() {
+        assert_eq!(stray_suffixes("test"), names(&["test"]));
+        assert_eq!(stray_suffixes("dev.mycompany"), names(&["dev.mycompany", "test"]));
+    }
+
+    #[test]
     fn preserves_lf_only_files() {
         let raw = "user\n127.0.0.1 localhost\n";
-        let out = render_hosts(raw, &names(&["app.test"]), &[]).unwrap();
+        let out = render_hosts(raw, &names(&["app.test"]), &[], &sfx()).unwrap();
         assert!(out.content.starts_with("user\n127.0.0.1 localhost\n"));
         assert!(out.content.contains(&format!("{BEGIN_MARKER}\n127.0.0.1 app.test\n{END_MARKER}\n")));
         assert!(!out.content.contains('\r'));
@@ -425,23 +518,23 @@ mod tests {
     #[test]
     fn preserves_bom_and_absence_of_bom() {
         let with_bom = format!("\u{feff}line\r\n");
-        let out = render_hosts(&with_bom, &names(&["a.test"]), &[]).unwrap();
+        let out = render_hosts(&with_bom, &names(&["a.test"]), &[], &sfx()).unwrap();
         assert!(out.content.starts_with('\u{feff}'));
 
-        let out2 = render_hosts("line\r\n", &names(&["a.test"]), &[]).unwrap();
+        let out2 = render_hosts("line\r\n", &names(&["a.test"]), &[], &sfx()).unwrap();
         assert!(!out2.content.starts_with('\u{feff}'));
     }
 
     #[test]
     fn empty_file_and_no_desired_stays_empty_without_write() {
-        let out = render_hosts("", &[], &[]).unwrap();
+        let out = render_hosts("", &[], &[], &sfx()).unwrap();
         assert!(!out.changed);
         assert_eq!(out.content, "");
     }
 
     #[test]
     fn empty_file_gets_block_with_crlf_default() {
-        let out = render_hosts("", &names(&["a.test"]), &[]).unwrap();
+        let out = render_hosts("", &names(&["a.test"]), &[], &sfx()).unwrap();
         assert_eq!(
             out.content,
             format!("{BEGIN_MARKER}\r\n127.0.0.1 a.test\r\n{END_MARKER}\r\n")
@@ -451,7 +544,7 @@ mod tests {
     #[test]
     fn file_without_trailing_newline_is_preserved() {
         let raw = "user-line-no-eol";
-        let out = render_hosts(raw, &names(&["a.test"]), &[]).unwrap();
+        let out = render_hosts(raw, &names(&["a.test"]), &[], &sfx()).unwrap();
         assert!(out.content.starts_with("user-line-no-eol\r\n"));
         assert!(out.content.contains(BEGIN_MARKER));
     }
@@ -461,7 +554,7 @@ mod tests {
         let raw = format!(
             "top\r\n{BEGIN_MARKER}\r\n127.0.0.1 a.test\r\n{END_MARKER}\r\n"
         );
-        let out = render_hosts(&raw, &names(&["a.test"]), &[]).unwrap();
+        let out = render_hosts(&raw, &names(&["a.test"]), &[], &sfx()).unwrap();
         assert!(!out.changed);
         assert_eq!(out.content, raw);
     }
@@ -469,7 +562,7 @@ mod tests {
     #[test]
     fn unterminated_block_aborts() {
         let raw = format!("{BEGIN_MARKER}\r\n127.0.0.1 a.test\r\n");
-        assert!(render_hosts(&raw, &[], &[]).is_err());
+        assert!(render_hosts(&raw, &[], &[], &sfx()).is_err());
     }
 
     #[test]
@@ -477,7 +570,7 @@ mod tests {
         let raw = format!(
             "keep-me\r\n{BEGIN_MARKER}\r\n127.0.0.1 gone.test\r\n{END_MARKER}\r\nalso-keep\r\n"
         );
-        let out = render_hosts(&raw, &[], &[]).unwrap();
+        let out = render_hosts(&raw, &[], &[], &sfx()).unwrap();
         assert_eq!(
             out.content,
             format!("keep-me\r\n{BEGIN_MARKER}\r\n{END_MARKER}\r\nalso-keep\r\n")
