@@ -7,6 +7,21 @@ with [git-cliff](https://git-cliff.org).
 
 ### Features
 
+- update sidebar logo to new berth and container glyph
+- enhance dark theme support and custom scrollbar styles
+- add preloader with fade-out effect and background color to enhance user experience
+- configurable domain suffix
+- improve layout responsiveness and add min-width to input fields
+- add support for starting Docker Desktop and enhance status reporting
+
+### Refactoring
+
+- simplify context menu suppression logic in useContextMenuGuard
+
+## [0.1.1] - 2026-07-19
+
+### Features
+
 - enforce a 900x600 minimum window size
 
 ### Fixes
