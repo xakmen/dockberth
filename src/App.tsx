@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { NewProjectDialog } from "@/components/NewProjectDialog";
 import { ProjectView, type ProjectAction } from "@/components/ProjectView";
@@ -15,23 +15,37 @@ import {
   type ProxyStatus,
 } from "@/lib/projects";
 
+const PROXY_HEAL_BACKOFF_MS = 30_000;
+
 function App() {
   const docker = useDockerStatus();
-  const { projects, statuses, refresh, pollNow } = useProjects();
+  const { projects, statuses, proxyRunning, refresh, pollNow } = useProjects();
 
   const [proxy, setProxy] = useState<ProxyStatus | null>(null);
   const proxyRequested = useRef(false);
+  const lastProxyEnsure = useRef(0);
   const [selectedName, setSelectedName] = useState("");
   const [search, setSearch] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<ProjectAction | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [fixingHosts, setFixingHosts] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | undefined>(undefined);
 
-  const runProxyEnsure = async () => {
+  const notify = useCallback((message: string) => {
+    setToast(message);
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 4000);
+  }, []);
+
+  const runProxyEnsure = useCallback(async (): Promise<ProxyStatus> => {
+    lastProxyEnsure.current = Date.now();
     setProxy(null);
-    setProxy(await proxyEnsure());
-  };
+    const status = await proxyEnsure();
+    setProxy(status);
+    return status;
+  }, []);
 
   // Bring up the shared Traefik proxy once Docker is confirmed running.
   useEffect(() => {
@@ -39,7 +53,23 @@ function App() {
       proxyRequested.current = true;
       void runProxyEnsure();
     }
-  }, [docker.status?.running]);
+  }, [docker.status?.running, runProxyEnsure]);
+
+  // Self-heal: the 3s status poll sees the proxy container. If Docker is
+  // responsive but the proxy is down (engine restarted, container killed),
+  // re-run proxy_ensure — at most once per 30s.
+  useEffect(() => {
+    if (
+      proxyRunning !== false || // null = docker unreachable / no poll yet
+      !proxyRequested.current ||
+      Date.now() - lastProxyEnsure.current < PROXY_HEAL_BACKOFF_MS
+    ) {
+      return;
+    }
+    void runProxyEnsure().then((status) => {
+      if (status.running) notify("Proxy restarted");
+    });
+  }, [proxyRunning, runProxyEnsure, notify]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -126,6 +156,11 @@ function App() {
           void pollNow();
         }}
       />
+      {toast ? (
+        <div className="fixed right-4 bottom-4 z-50 rounded-md border border-accent-border bg-accent px-4 py-2.5 text-[12.5px] text-accent-foreground shadow-lg">
+          {toast}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   listProjects,
   projectsStatus,
@@ -11,8 +11,11 @@ const POLL_INTERVAL_MS = 3000;
 interface UseProjectsResult {
   projects: ProjectInfo[];
   statuses: Record<string, ProjectStatus>;
+  /** From the same poll: is the Traefik proxy container running?
+   * null until the first successful poll. */
+  proxyRunning: boolean | null;
   loading: boolean;
-  /** Reload the registry (after create / hosts fix). */
+  /** Reload the registry (after create / delete / hosts fix). */
   refresh: () => Promise<void>;
   /** Re-poll container statuses immediately (after start/stop). */
   pollNow: () => Promise<void>;
@@ -22,7 +25,9 @@ interface UseProjectsResult {
 export function useProjects(): UseProjectsResult {
   const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [statuses, setStatuses] = useState<Record<string, ProjectStatus>>({});
+  const [proxyRunning, setProxyRunning] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const polling = useRef(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -35,18 +40,29 @@ export function useProjects(): UseProjectsResult {
   }, []);
 
   const pollNow = useCallback(async () => {
+    if (polling.current) return;
+    polling.current = true;
     try {
-      setStatuses(await projectsStatus());
+      const snapshot = await projectsStatus();
+      setStatuses(snapshot.projects);
+      setProxyRunning(snapshot.proxyRunning);
     } catch {
-      // Docker down — keep the last known statuses.
+      // Docker down — keep the last known statuses, mark proxy unknown.
+      setProxyRunning(null);
+    } finally {
+      polling.current = false;
     }
   }, []);
 
   useEffect(() => {
     void refresh();
     void pollNow();
+    let tick = 0;
     const interval = setInterval(() => {
-      if (document.hasFocus()) void pollNow();
+      tick += 1;
+      // Every 3s while focused; every 30s in the background so proxy
+      // self-heal still happens without the window being active.
+      if (document.hasFocus() || tick % 10 === 0) void pollNow();
     }, POLL_INTERVAL_MS);
     const onFocus = () => void pollNow();
     window.addEventListener("focus", onFocus);
@@ -56,7 +72,7 @@ export function useProjects(): UseProjectsResult {
     };
   }, [refresh, pollNow]);
 
-  return { projects, statuses, loading, refresh, pollNow };
+  return { projects, statuses, proxyRunning, loading, refresh, pollNow };
 }
 
 /** Status for one project, defaulting to stopped when unknown. */

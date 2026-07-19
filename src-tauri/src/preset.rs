@@ -64,6 +64,10 @@ pub struct Preset {
     /// Shown in the new-project dialog after detection.
     #[serde(default)]
     pub notes: Option<String>,
+    /// Path appended to http://<name>.test when opening the project in a
+    /// browser (Vendure's admin lives at /dashboard). Default "/".
+    #[serde(default)]
+    pub open_path: Option<String>,
 }
 
 /// Embedded presets in DETECTION PRECEDENCE order: specific markers

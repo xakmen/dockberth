@@ -62,6 +62,13 @@ export interface ProjectInfo {
   location: ProjectLocation;
   config: ProjectConfig | null;
   hostsOk: boolean;
+  /** Path opened in the browser for this project (preset openPath, "/"). */
+  openUrlPath: string;
+}
+
+export interface StatusSnapshot {
+  projects: Record<string, ProjectStatus>;
+  proxyRunning: boolean;
 }
 
 export interface DetectResult {
@@ -191,8 +198,7 @@ export const stopProject = (name: string) =>
   invoke<void>("project_stop", { name });
 export const restartProject = (name: string) =>
   invoke<void>("project_restart", { name });
-export const projectsStatus = () =>
-  invoke<Record<string, ProjectStatus>>("projects_status");
+export const projectsStatus = () => invoke<StatusSnapshot>("projects_status");
 export const projectServices = (name: string) =>
   invoke<ServiceState[]>("project_services", { name });
 export const hostsEnsure = (domain: string) =>

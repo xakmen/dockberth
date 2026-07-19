@@ -29,6 +29,8 @@ pub struct ProjectInfo {
     /// None when `.dockberth/config.json` is missing or unreadable.
     pub config: Option<ProjectConfig>,
     pub hosts_ok: bool,
+    /// Path opened in the browser for this project (preset openPath, "/").
+    pub open_url_path: String,
 }
 
 #[derive(Serialize)]
@@ -93,6 +95,12 @@ fn entry_to_info(entry: &RegistryEntry) -> ProjectInfo {
     let location = effective_location(entry, config.as_ref());
     let hosts_ok =
         hosts::domain_present(&format!("{}.test", entry.name)).unwrap_or(false);
+    let open_url_path = config
+        .as_ref()
+        .and_then(|c| c.preset.as_deref())
+        .and_then(preset::find_preset)
+        .and_then(|p| p.open_path.clone())
+        .unwrap_or("/".to_string());
     ProjectInfo {
         name: entry.name.clone(),
         path: entry.path.clone(),
@@ -100,6 +108,7 @@ fn entry_to_info(entry: &RegistryEntry) -> ProjectInfo {
         location,
         config,
         hosts_ok,
+        open_url_path,
     }
 }
 
@@ -364,10 +373,20 @@ pub async fn project_open_editor(app: AppHandle, name: String) -> Result<(), Str
     }
 }
 
-/// Coarse status for every registered project in a single `docker ps` call,
-/// keyed by project name: running | starting | stopped.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StatusSnapshot {
+    /// Per-project status: running | starting | stopped.
+    pub projects: HashMap<String, String>,
+    /// State of the dockberth-proxy container in the same `docker ps` —
+    /// lets the frontend self-heal the proxy without extra polling cost.
+    pub proxy_running: bool,
+}
+
+/// Coarse status for every registered project (and the proxy) in a single
+/// `docker ps` call.
 #[tauri::command]
-pub async fn projects_status(app: AppHandle) -> Result<HashMap<String, String>, String> {
+pub async fn projects_status(app: AppHandle) -> Result<StatusSnapshot, String> {
     let stdout = run_docker_checked(
         &app,
         &[
@@ -382,6 +401,7 @@ pub async fn projects_status(app: AppHandle) -> Result<HashMap<String, String>, 
     .await?;
 
     let mut per_project: HashMap<String, Vec<&'static str>> = HashMap::new();
+    let mut proxy_running = false;
     for line in stdout.lines() {
         let Some((compose_project, state)) = line.split_once('|') else {
             continue;
@@ -390,6 +410,7 @@ pub async fn projects_status(app: AppHandle) -> Result<HashMap<String, String>, 
             continue;
         };
         if name == "proxy" {
+            proxy_running = state.trim() == "running";
             continue;
         }
         per_project
@@ -398,7 +419,7 @@ pub async fn projects_status(app: AppHandle) -> Result<HashMap<String, String>, 
             .push(map_container_state(state.trim()));
     }
 
-    Ok(per_project
+    let projects = per_project
         .into_iter()
         .map(|(name, states)| {
             let status = if states.iter().all(|s| *s == "running") {
@@ -410,7 +431,11 @@ pub async fn projects_status(app: AppHandle) -> Result<HashMap<String, String>, 
             };
             (name, status.to_string())
         })
-        .collect())
+        .collect();
+    Ok(StatusSnapshot {
+        projects,
+        proxy_running,
+    })
 }
 
 /// Per-service container states for one project (Services card).

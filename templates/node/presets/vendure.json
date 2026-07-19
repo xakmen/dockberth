@@ -5,5 +5,6 @@
   "detect": { "packageJsonDeps": ["@vendure/core"] },
   "defaults": { "nodeVersion": "22", "db": "postgres-16", "redis": false, "startCommand": "npm run dev" },
   "appPort": 3000,
-  "notes": "Admin UI is served at /admin. Point your .env DB settings at the Database card values (host `db`) and make sure the server binds 0.0.0.0 (HOST env is set)."
+  "openPath": "/dashboard",
+  "notes": "Admin UI is served at /dashboard. Point your .env DB settings at the Database card values (host `db`) and make sure the server binds 0.0.0.0 (HOST env is set)."
 }

@@ -78,11 +78,13 @@ export function ProjectView({
               {project.name}
             </h1>
             <StatusBadge status={status} />
+            {/* Display shows the bare domain; the target appends the
+                preset's openPath (e.g. Vendure → /dashboard). */}
             <a
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                void openUrl(`http://${domain}`);
+                void openUrl(`http://${domain}${project.openUrlPath}`);
               }}
               className="flex items-center gap-[5px] font-mono text-[12.5px] text-primary hover:underline"
             >
@@ -136,7 +138,9 @@ export function ProjectView({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem
-                    onSelect={() => void openUrl(`http://${domain}`)}
+                    onSelect={() =>
+                      void openUrl(`http://${domain}${project.openUrlPath}`)
+                    }
                   >
                     <ArrowUpRight className="size-3.5" />
                     Open in browser

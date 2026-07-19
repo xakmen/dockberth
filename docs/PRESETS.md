@@ -76,7 +76,11 @@ the right precedence position (see below).
 
   // One or two sentences shown in the dialog after detection: what the
   // user should know to wire their existing code to the environment.
-  "notes": "Point DB_HOST at `db` in your .env."
+  "notes": "Point DB_HOST at `db` in your .env.",
+
+  // Optional path appended to http://<name>.test by "Open in browser"
+  // and the header domain link (Vendure: "/dashboard"). Default "/".
+  "openPath": "/"
 }
 ```
 
