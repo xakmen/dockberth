@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#06090d;font-family:'Inter',system-ui,sans-serif;}
+a{color:#3fc1d4;text-decoration:none}a:hover{color:#6bd4e3;text-decoration:underline}
+</style>
+</helmet>
+<section style="padding:64px;display:flex;flex-direction:column;gap:28px;align-items:flex-start;color:#e3e9ef">
+<div style="display:flex;flex-direction:column;gap:8px;max-width:760px">
+  <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;color:#3fc1d4;text-transform:uppercase">Dockberth · App icon</div>
+  <div style="font-size:22px;font-weight:600;letter-spacing:-0.3px">Dockberth app icon — four directions</div>
+  <div style="font-size:13px;line-height:1.6;color:#7d8b99">Single bold glyph on a rounded-square tile, pure SVG paths on a 48×48 grid. Each shown at 256px and 16px (taskbar/tray). Recommended: <a href="#1c">1c</a>.</div>
+</div>
+<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:stretch">
+
+  <div id="1a" style="background:#0c1117;border:1px solid #202a36;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:16px;width:280px">
+    <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#3fc1d4;background:#0f3038;border:1px solid #1e5a66;border-radius:5px;padding:2px 6px">1a</span><span style="font-size:13px;font-weight:600">Berth</span></div>
+    <svg width="256" height="256" viewBox="0 0 48 48" style="display:block"><rect width="48" height="48" rx="11" fill="#0F3038"/><rect x="0.5" y="0.5" width="47" height="47" rx="10.5" fill="none" stroke="#1E5A66" stroke-width="1"/><path d="M14 14v10a10 10 0 0 0 20 0V14" fill="none" stroke="#3FC1D4" stroke-width="5.5" stroke-linecap="round"/></svg>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="width:56px;height:36px;border-radius:7px;background:#0b0f14;border:1px solid #1f2833;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#0F3038"/><path d="M14 14v10a10 10 0 0 0 20 0V14" fill="none" stroke="#3FC1D4" stroke-width="5.5" stroke-linecap="round"/></svg></div>
+      <div style="width:56px;height:36px;border-radius:7px;background:#e9edf0;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#0F3038"/><path d="M14 14v10a10 10 0 0 0 20 0V14" fill="none" stroke="#3FC1D4" stroke-width="5.5" stroke-linecap="round"/></svg></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#55636f">16px</span>
+    </div>
+    <div style="font-size:12px;line-height:1.55;color:#7d8b99">The placeholder, matured: heavier stroke, round caps. Quietest option — maximum legibility, least story.</div>
+  </div>
+
+  <div id="1b" style="background:#0c1117;border:1px solid #202a36;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:16px;width:280px">
+    <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#3fc1d4;background:#0f3038;border:1px solid #1e5a66;border-radius:5px;padding:2px 6px">1b</span><span style="font-size:13px;font-weight:600">Berth + bollard</span></div>
+    <svg width="256" height="256" viewBox="0 0 48 48" style="display:block"><rect width="48" height="48" rx="11" fill="#0F3038"/><rect x="0.5" y="0.5" width="47" height="47" rx="10.5" fill="none" stroke="#1E5A66" stroke-width="1"/><path d="M14 15v10a10 10 0 0 0 20 0V15" fill="none" stroke="#3FC1D4" stroke-width="5" stroke-linecap="round"/><circle cx="24" cy="22" r="4" fill="#3FC1D4"/></svg>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="width:56px;height:36px;border-radius:7px;background:#0b0f14;border:1px solid #1f2833;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#0F3038"/><path d="M14 15v10a10 10 0 0 0 20 0V15" fill="none" stroke="#3FC1D4" stroke-width="5" stroke-linecap="round"/><circle cx="24" cy="22" r="4" fill="#3FC1D4"/></svg></div>
+      <div style="width:56px;height:36px;border-radius:7px;background:#e9edf0;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#0F3038"/><path d="M14 15v10a10 10 0 0 0 20 0V15" fill="none" stroke="#3FC1D4" stroke-width="5" stroke-linecap="round"/><circle cx="24" cy="22" r="4" fill="#3FC1D4"/></svg></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#55636f">16px</span>
+    </div>
+    <div style="font-size:12px;line-height:1.55;color:#7d8b99">Mooring bollard dot inside the slot — "something is tied up here". Dot doubles as a status point. Very ownable mark.</div>
+  </div>
+
+  <div id="1c" style="background:#0c1117;border:1px solid #3fc1d4;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:16px;width:280px;position:relative">
+    <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#04252b;background:#3fc1d4;border:1px solid #3fc1d4;border-radius:5px;padding:2px 6px">1c</span><span style="font-size:13px;font-weight:600">Container in berth</span><span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#3fc1d4;margin-left:auto">RECOMMENDED</span></div>
+    <svg width="256" height="256" viewBox="0 0 48 48" style="display:block"><rect width="48" height="48" rx="11" fill="#0F3038"/><rect x="0.5" y="0.5" width="47" height="47" rx="10.5" fill="none" stroke="#1E5A66" stroke-width="1"/><path d="M13 12v13a11 11 0 0 0 22 0V12" fill="none" stroke="#3FC1D4" stroke-width="4.5" stroke-linecap="round"/><rect x="18.5" y="19" width="11" height="11" rx="2.5" fill="#3FC1D4"/></svg>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="width:56px;height:36px;border-radius:7px;background:#0b0f14;border:1px solid #1f2833;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#0F3038"/><path d="M13 12v13a11 11 0 0 0 22 0V12" fill="none" stroke="#3FC1D4" stroke-width="4.5" stroke-linecap="round"/><rect x="18.5" y="19" width="11" height="11" rx="2.5" fill="#3FC1D4"/></svg></div>
+      <div style="width:56px;height:36px;border-radius:7px;background:#e9edf0;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#0F3038"/><path d="M13 12v13a11 11 0 0 0 22 0V12" fill="none" stroke="#3FC1D4" stroke-width="4.5" stroke-linecap="round"/><rect x="18.5" y="19" width="11" height="11" rx="2.5" fill="#3FC1D4"/></svg></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#55636f">16px</span>
+    </div>
+    <div style="font-size:12px;line-height:1.55;color:#7d8b99">A filled container moored inside the berth — the whole product in one mark (Docker container × docking slot). Solid box keeps contrast at 16px.</div>
+  </div>
+
+  <div id="1d" style="background:#0c1117;border:1px solid #202a36;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:16px;width:280px">
+    <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#3fc1d4;background:#0f3038;border:1px solid #1e5a66;border-radius:5px;padding:2px 6px">1d</span><span style="font-size:13px;font-weight:600">Berth + waterline</span></div>
+    <svg width="256" height="256" viewBox="0 0 48 48" style="display:block"><rect width="48" height="48" rx="11" fill="#0F3038"/><rect x="0.5" y="0.5" width="47" height="47" rx="10.5" fill="none" stroke="#1E5A66" stroke-width="1"/><path d="M15 10v10a9 9 0 0 0 18 0V10" fill="none" stroke="#3FC1D4" stroke-width="5" stroke-linecap="round"/><path d="M12 37c2 0 4-3 6-3s4 3 6 3 4-3 6-3 4 3 6 3" fill="none" stroke="#3FC1D4" stroke-width="3" stroke-linecap="round" opacity="0.5"/></svg>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="width:56px;height:36px;border-radius:7px;background:#0b0f14;border:1px solid #1f2833;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#0F3038"/><path d="M15 10v10a9 9 0 0 0 18 0V10" fill="none" stroke="#3FC1D4" stroke-width="5" stroke-linecap="round"/><path d="M12 37c2 0 4-3 6-3s4 3 6 3 4-3 6-3 4 3 6 3" fill="none" stroke="#3FC1D4" stroke-width="3" stroke-linecap="round" opacity="0.5"/></svg></div>
+      <div style="width:56px;height:36px;border-radius:7px;background:#e9edf0;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#0F3038"/><path d="M15 10v10a9 9 0 0 0 18 0V10" fill="none" stroke="#3FC1D4" stroke-width="5" stroke-linecap="round"/><path d="M12 37c2 0 4-3 6-3s4 3 6 3 4-3 6-3 4 3 6 3" fill="none" stroke="#3FC1D4" stroke-width="3" stroke-linecap="round" opacity="0.5"/></svg></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#55636f">16px</span>
+    </div>
+    <div style="font-size:12px;line-height:1.55;color:#7d8b99">Berth floating over a quiet swell. Most nautical mood, but the wave thins out at 16px — better for marketing than tray.</div>
+  </div>
+</div>
+
+<div id="1e" style="background:#0c1117;border:1px solid #202a36;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:20px;max-width:1240px">
+  <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#3fc1d4;background:#0f3038;border:1px solid #1e5a66;border-radius:5px;padding:2px 6px">1e</span><span style="font-size:13px;font-weight:600">Winning direction (<a href="#1c">1c</a>) — deliverables</span></div>
+  <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;color:#55636f;text-transform:uppercase">Tile · Windows app icon</div>
+      <svg width="200" height="200" viewBox="0 0 48 48" style="display:block"><defs><linearGradient id="dbTile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#144552"/><stop offset="1" stop-color="#0C2830"/></linearGradient></defs><rect width="48" height="48" rx="11" fill="url(#dbTile)"/><rect x="0.5" y="0.5" width="47" height="47" rx="10.5" fill="none" stroke="#1E5A66" stroke-width="1"/><path d="M13 12v13a11 11 0 0 0 22 0V12" fill="none" stroke="#3FC1D4" stroke-width="4.5" stroke-linecap="round"/><rect x="18.5" y="19" width="11" height="11" rx="2.5" fill="#3FC1D4"/></svg>
+      <div style="display:flex;gap:8px;align-items:center">
+        <svg width="48" height="48" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#144552"/><path d="M13 12v13a11 11 0 0 0 22 0V12" fill="none" stroke="#3FC1D4" stroke-width="4.5" stroke-linecap="round"/><rect x="18.5" y="19" width="11" height="11" rx="2.5" fill="#3FC1D4"/></svg>
+        <svg width="32" height="32" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#144552"/><path d="M13 12v13a11 11 0 0 0 22 0V12" fill="none" stroke="#3FC1D4" stroke-width="4.5" stroke-linecap="round"/><rect x="18.5" y="19" width="11" height="11" rx="2.5" fill="#3FC1D4"/></svg>
+        <svg width="16" height="16" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#144552"/><path d="M13 12v13a11 11 0 0 0 22 0V12" fill="none" stroke="#3FC1D4" stroke-width="4.5" stroke-linecap="round"/><rect x="18.5" y="19" width="11" height="11" rx="2.5" fill="#3FC1D4"/></svg>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#55636f">48 · 32 · 16</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;color:#55636f;text-transform:uppercase">Glyph only · system tray (mono)</div>
+      <div style="display:flex;gap:12px">
+        <div style="width:96px;height:96px;border-radius:10px;background:#0b0f14;border:1px solid #1f2833;display:flex;align-items:center;justify-content:center"><svg width="56" height="56" viewBox="0 0 48 48"><path d="M13 12v13a11 11 0 0 0 22 0V12" fill="none" stroke="#f2f5f7" stroke-width="4.5" stroke-linecap="round"/><rect x="18.5" y="19" width="11" height="11" rx="2.5" fill="#f2f5f7"/></svg></div>
+        <div style="width:96px;height:96px;border-radius:10px;background:#e9edf0;display:flex;align-items:center;justify-content:center"><svg width="56" height="56" viewBox="0 0 48 48"><path d="M13 12v13a11 11 0 0 0 22 0V12" fill="none" stroke="#1a232c" stroke-width="4.5" stroke-linecap="round"/><rect x="18.5" y="19" width="11" height="11" rx="2.5" fill="#1a232c"/></svg></div>
+      </div>
+      <div style="display:flex;gap:12px">
+        <div style="width:96px;height:32px;border-radius:7px;background:#0b0f14;border:1px solid #1f2833;display:flex;align-items:center;justify-content:center;gap:10px"><svg width="16" height="16" viewBox="0 0 48 48"><path d="M13 12v13a11 11 0 0 0 22 0V12" fill="none" stroke="#f2f5f7" stroke-width="4.5" stroke-linecap="round"/><rect x="18.5" y="19" width="11" height="11" rx="2.5" fill="#f2f5f7"/></svg><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#55636f">16px</span></div>
+        <div style="width:96px;height:32px;border-radius:7px;background:#e9edf0;display:flex;align-items:center;justify-content:center;gap:10px"><svg width="16" height="16" viewBox="0 0 48 48"><path d="M13 12v13a11 11 0 0 0 22 0V12" fill="none" stroke="#1a232c" stroke-width="4.5" stroke-linecap="round"/><rect x="18.5" y="19" width="11" height="11" rx="2.5" fill="#1a232c"/></svg><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#8794a0">16px</span></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:380px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;color:#55636f;text-transform:uppercase">SVG geometry · 48×48 grid, paths only</div>
+      <div style="background:#070a0e;border:1px solid #171f29;border-radius:10px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.8;color:#aeb9c4;white-space:pre-wrap;word-break:break-all">&lt;svg {{ vbAttr }} xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;!-- tile (omit for tray glyph) --&gt;
+  &lt;rect width="48" height="48" rx="11" fill="#0F3038"/&gt;
+  &lt;!-- berth --&gt;
+  &lt;path d="M13 12v13a11 11 0 0 0 22 0V12" fill="none"
+        stroke="#3FC1D4" stroke-width="4.5" stroke-linecap="round"/&gt;
+  &lt;!-- container --&gt;
+  &lt;rect x="18.5" y="19" width="11" height="11" rx="2.5" fill="#3FC1D4"/&gt;
+&lt;/svg&gt;</div>
+      <div style="font-size:12px;line-height:1.55;color:#7d8b99">Tray: drop the tile rect, set stroke/fill to a single color. For .ico, rasterize at 16/24/32/48/256; at 16px keep the vector stroke (no hinting needed — geometry snaps to whole pixels on the 48 grid ÷ 3).</div>
+    </div>
+  </div>
+</div>
+<a href="Dockberth Mockups.dc.html" style="font-size:12px">← Desktop mockups</a>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return { vbAttr: 'viewBox="0 0 48 48"' };
+  }
+}
+</script>
+</body>
+</html>
