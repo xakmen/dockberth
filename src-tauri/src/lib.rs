@@ -1,5 +1,6 @@
 mod docker;
-mod hosts;
+/// pub: the hosts renderer is exercised by examples/hosts_render.rs.
+pub mod hosts;
 mod logs;
 mod preset;
 mod projects;
@@ -21,6 +22,7 @@ pub fn run() {
             docker::docker_version,
             proxy::proxy_ensure,
             hosts::hosts_ensure,
+            hosts::hosts_repair,
             projects::detect_project,
             projects::project_list,
             projects::project_create,

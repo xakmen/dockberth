@@ -278,7 +278,7 @@ pub async fn project_create(app: AppHandle, args: CreateArgs) -> Result<ProjectI
     registry::save_entries(&app, entries)?;
 
     // Hosts entry — best-effort; hosts_ok=false surfaces a retry banner.
-    let _ = hosts::hosts_ensure(format!("{}.test", args.name)).await;
+    let _ = hosts::hosts_ensure(app.clone(), format!("{}.test", args.name)).await;
 
     Ok(entry_to_info(&entry))
 }
@@ -441,7 +441,7 @@ pub async fn project_delete(
 
     let mut hosts_removed = true;
     if options.remove_hosts {
-        hosts_removed = hosts::hosts_remove(format!("{name}.test")).await?;
+        hosts_removed = hosts::hosts_remove(&app, format!("{name}.test")).await?;
     }
 
     if options.remove_dockberth_dir {

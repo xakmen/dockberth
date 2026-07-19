@@ -1,6 +1,12 @@
 import { useEffect, useRef } from "react";
-import { Plus, Search } from "lucide-react";
+import { MoreHorizontal, Plus, Search, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { DockerStatusRow, ProxyStatusRow } from "@/components/DockerStatusRow";
 import { StatusDot } from "@/components/StatusDot";
@@ -23,6 +29,7 @@ interface SidebarProps {
   search: string;
   onSearchChange: (value: string) => void;
   onNewProject: () => void;
+  onRepairHosts: () => void;
   docker: DockerStatus | null;
   dockerLoading: boolean;
   proxy: ProxyStatus | null;
@@ -38,6 +45,7 @@ export function Sidebar({
   search,
   onSearchChange,
   onNewProject,
+  onRepairHosts,
   docker,
   dockerLoading,
   proxy,
@@ -143,14 +151,34 @@ export function Sidebar({
 
       {/* New project + engine status */}
       <div className="flex flex-col gap-2.5 p-3">
-        <Button
-          variant="outline"
-          onClick={onNewProject}
-          className="h-auto w-full gap-[7px] rounded-md border-input bg-transparent py-[9px] text-[12.5px] font-medium text-soft shadow-none hover:border-primary hover:bg-transparent hover:text-foreground dark:bg-transparent dark:hover:bg-transparent"
-        >
-          <Plus className="size-3.5" />
-          New project
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={onNewProject}
+            className="h-auto flex-1 gap-[7px] rounded-md border-input bg-transparent py-[9px] text-[12.5px] font-medium text-soft shadow-none hover:border-primary hover:bg-transparent hover:text-foreground dark:bg-transparent dark:hover:bg-transparent"
+          >
+            <Plus className="size-3.5" />
+            New project
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Maintenance"
+                className="size-[36px] shrink-0 rounded-md border-input bg-transparent text-muted-foreground shadow-none hover:border-border-strong hover:bg-transparent hover:text-foreground dark:bg-transparent dark:hover:bg-transparent"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="top" className="w-56">
+              <DropdownMenuItem onSelect={onRepairHosts}>
+                <Wrench className="size-3.5" />
+                Repair hosts entries
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         <div className="flex flex-col gap-1">
           <DockerStatusRow status={docker} loading={dockerLoading} />
           {docker?.running ? (

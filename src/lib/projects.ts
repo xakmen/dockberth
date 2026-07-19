@@ -214,6 +214,7 @@ export const projectServices = (name: string) =>
   invoke<ServiceState[]>("project_services", { name });
 export const hostsEnsure = (domain: string) =>
   invoke<boolean>("hosts_ensure", { domain });
+export const hostsRepair = () => invoke<boolean>("hosts_repair");
 export const proxyEnsure = () => invoke<ProxyStatus>("proxy_ensure");
 export const wslListDistros = () => invoke<WslDistro[]>("wsl_list_distros");
 export const wslCheckDocker = (distro: string) =>

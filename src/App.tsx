@@ -8,6 +8,7 @@ import { useDockerStatus } from "@/hooks/useDockerStatus";
 import { useProjects } from "@/hooks/useProjects";
 import {
   hostsEnsure,
+  hostsRepair,
   projectDomain,
   proxyEnsure,
   restartProject,
@@ -219,6 +220,18 @@ function App() {
         search={search}
         onSearchChange={setSearch}
         onNewProject={() => setWizardOpen(true)}
+        onRepairHosts={() =>
+          void hostsRepair()
+            .then((ok) => {
+              notify(
+                ok
+                  ? "Hosts entries repaired"
+                  : "Hosts repair incomplete (elevation declined?)",
+              );
+              void refresh();
+            })
+            .catch((err: unknown) => notify(String(err)))
+        }
         docker={docker.status}
         dockerLoading={docker.loading}
         proxy={proxy}
