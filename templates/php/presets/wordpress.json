@@ -8,5 +8,10 @@
   "appPort": 8080,
   "extraServices": ["wpcli"],
   "phpExtensions": ["mysqli"],
+  "scaffold": {
+    "image": "wordpress:cli",
+    "args": ["php", "-d", "memory_limit=512M", "/usr/local/bin/wp", "core", "download", "--locale=en_US", "--allow-root"],
+    "env": { "HOME": "/tmp" }
+  },
   "notes": "Use the Database card values in wp-config.php (DB_HOST is `db`). WP-CLI ships as a `tools` profile service."
 }

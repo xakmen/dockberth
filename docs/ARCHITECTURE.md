@@ -103,6 +103,28 @@ that remaps `www-data` to the distro user's UID/GID via serversideup's
 container keeps running as `www-data`, writes work, and files created inside
 the container belong to the distro user on the host.
 
+## Scaffolding ("New project" mode)
+
+New projects are scaffolded by a **one-off container run** defined by the
+preset's `scaffold` spec (image + args) with the target folder mounted at
+the base's app dir — e.g. WordPress: `wordpress:cli wp core download`.
+No local toolchain is required, only Docker.
+
+- **Location-aware user mapping**, same policy as the runtime: WSL2
+  targets run inside the distro with `--user <uid>:<gid>` of the distro
+  user (files belong to the user); NTFS targets run as root (consistent
+  with the NTFS runtime container).
+- **Cleanup semantics:** on failure or cancel, only what the scaffold
+  produced is removed — a folder Dockberth created is deleted entirely; a
+  pre-existing (empty) target is emptied again. Nothing outside the
+  target is ever touched. Cancel force-removes the named scaffold
+  container (`dockberth-scaffold-<name>`), which ends the `docker run`
+  client and triggers the cleanup.
+- After a successful download the normal create pipeline takes over —
+  detection finds the framework markers and the preset flow (compose
+  generation, hosts, start) is identical to onboarding an existing
+  project.
+
 ## To be written
 
 - Template rendering pipeline and variable model

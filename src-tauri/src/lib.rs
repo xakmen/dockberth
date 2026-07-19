@@ -6,6 +6,7 @@ mod preset;
 mod projects;
 mod proxy;
 mod registry;
+mod scaffold;
 mod template;
 mod wsl;
 
@@ -37,6 +38,9 @@ pub fn run() {
             projects::project_open_shell,
             logs::logs_start,
             logs::logs_stop,
+            preset::preset_list,
+            scaffold::scaffold_project,
+            scaffold::scaffold_cancel,
             wsl::wsl_list_distros,
             wsl::wsl_check_docker,
         ])

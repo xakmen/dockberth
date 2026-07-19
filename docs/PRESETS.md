@@ -80,7 +80,21 @@ the right precedence position (see below).
 
   // Optional path appended to http://<name>.test by "Open in browser"
   // and the header domain link (Vendure: "/dashboard"). Default "/".
-  "openPath": "/"
+  "openPath": "/",
+
+  // Optional "New project" scaffolding: a one-off container run with the
+  // target folder mounted at the base's app dir. Presets without this
+  // appear disabled ("coming soon") in the New-project stack picker.
+  // Framework specifics belong HERE, as data — never hardcode them in
+  // Rust or the UI (Laravel/Vendure become one preset edit each).
+  // "env" is optional container environment (WordPress needs a writable
+  // HOME). Note the php -d wrapper: the image's `wp` is the phar itself,
+  // and its 128M memory_limit kills wp-cli's zip extraction.
+  "scaffold": {
+    "image": "wordpress:cli",
+    "args": ["php", "-d", "memory_limit=512M", "/usr/local/bin/wp", "core", "download", "--locale=en_US", "--allow-root"],
+    "env": { "HOME": "/tmp" }
+  }
 }
 ```
 

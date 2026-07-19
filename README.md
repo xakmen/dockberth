@@ -13,6 +13,8 @@ no terminal required.
 - **One-click environments** for Laravel, WordPress, Vendure, and generic
   Node/PHP projects from built-in presets (roadmap: Yii, CodeIgniter,
   OpenCart, Drupal — post-dogfooding)
+- **Create new WordPress projects from scratch** — only Docker required,
+  no local PHP/WP-CLI (Laravel and Vendure scaffolding coming next)
 - **Pretty local domains** — every project served as `<name>.test` through a
   shared Traefik proxy on ports 80/443
 - **Hosts file managed for you** via a small elevated helper (single UAC

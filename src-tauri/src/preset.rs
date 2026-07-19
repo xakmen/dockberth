@@ -40,6 +40,21 @@ pub struct PresetDefaults {
     pub start_command: Option<String>,
 }
 
+/// How to scaffold a brand-new project of this framework: a one-off
+/// container run with the target folder mounted at the base's app dir.
+/// Presets without a scaffold spec appear disabled in "New project".
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ScaffoldSpec {
+    pub image: String,
+    pub args: Vec<String>,
+    /// Environment for the scaffold container (BTreeMap: deterministic
+    /// argument order). WordPress needs HOME and a higher memory_limit —
+    /// wp-cli's zip extraction blows the image's 128M default.
+    #[serde(default)]
+    pub env: std::collections::BTreeMap<String, String>,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Preset {
@@ -68,6 +83,16 @@ pub struct Preset {
     /// browser (Vendure's admin lives at /dashboard). Default "/".
     #[serde(default)]
     pub open_path: Option<String>,
+    /// "New project" scaffolding (see docs/PRESETS.md). Framework
+    /// specifics live HERE, as data — never hardcoded outside the preset.
+    #[serde(default)]
+    pub scaffold: Option<ScaffoldSpec>,
+}
+
+/// All embedded presets, for the new-project dialog's stack picker.
+#[tauri::command]
+pub fn preset_list() -> Vec<Preset> {
+    all_presets().to_vec()
 }
 
 /// Embedded presets in DETECTION PRECEDENCE order: specific markers
@@ -142,6 +167,26 @@ mod tests {
         assert_eq!(find_preset("wordpress").unwrap().extra_services, ["wpcli"]);
         assert_eq!(find_preset("laravel").unwrap().docroot.as_deref(), Some("public"));
         assert_eq!(find_preset("vendure").unwrap().app_port, 3000);
+    }
+
+    #[test]
+    fn scaffold_spec_parses_for_wordpress_only() {
+        let wp = find_preset("wordpress").unwrap().scaffold.as_ref().unwrap();
+        assert_eq!(wp.image, "wordpress:cli");
+        // php -d wrapper: the image's `wp` is the phar directly, so
+        // WP_CLI_PHP_ARGS is ignored and the 128M memory_limit kills the
+        // zip extraction (found live) — raise it explicitly.
+        assert_eq!(wp.args[..3], ["php", "-d", "memory_limit=512M"]);
+        // --allow-root: NTFS scaffolds run as root (runtime policy parity)
+        // and wp-cli refuses root without it; harmless for non-root WSL.
+        assert_eq!(
+            wp.args[3..],
+            ["/usr/local/bin/wp", "core", "download", "--locale=en_US", "--allow-root"]
+        );
+        assert_eq!(wp.env.get("HOME").map(String::as_str), Some("/tmp"));
+        assert!(find_preset("laravel").unwrap().scaffold.is_none());
+        assert!(find_preset("vendure").unwrap().scaffold.is_none());
+        assert!(find_preset("node-generic").unwrap().scaffold.is_none());
     }
 
     #[test]

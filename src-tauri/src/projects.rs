@@ -40,6 +40,9 @@ pub struct DetectResult {
     pub preset: Option<Preset>,
     pub suggested_name: String,
     pub location: Location,
+    /// True when the folder has no entries at all — the dialog offers to
+    /// scaffold a new project there instead of showing an error.
+    pub empty: bool,
 }
 
 #[derive(Serialize)]
@@ -133,10 +136,14 @@ pub fn detect_project(path: String) -> Result<DetectResult, String> {
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
+    let empty = fs::read_dir(dir)
+        .map(|mut entries| entries.next().is_none())
+        .unwrap_or(false);
     Ok(DetectResult {
         preset: preset::detect(dir).cloned(),
         suggested_name: sanitize_name(&folder_name),
         location: derive_location(&path),
+        empty,
     })
 }
 

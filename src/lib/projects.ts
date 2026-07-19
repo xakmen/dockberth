@@ -29,6 +29,11 @@ export interface PresetDefaults {
   startCommand?: string;
 }
 
+export interface ScaffoldSpec {
+  image: string;
+  args: string[];
+}
+
 export interface Preset {
   id: string;
   displayName: string;
@@ -39,6 +44,9 @@ export interface Preset {
   appPort: number;
   extraServices: string[];
   notes?: string | null;
+  openPath?: string | null;
+  /** Present when the preset supports "New project" scaffolding. */
+  scaffold?: ScaffoldSpec | null;
 }
 
 export interface ProjectConfig {
@@ -86,6 +94,8 @@ export interface DetectResult {
   preset: Preset | null;
   suggestedName: string;
   location: ProjectLocation;
+  /** Folder has no entries at all — offer scaffolding instead of an error. */
+  empty: boolean;
 }
 
 export interface ServiceState {
@@ -215,6 +225,34 @@ export const projectServices = (name: string) =>
 export const hostsEnsure = (domain: string) =>
   invoke<boolean>("hosts_ensure", { domain });
 export const hostsRepair = () => invoke<boolean>("hosts_repair");
+
+export type ScaffoldEvent =
+  | { type: "line"; line: string; pulling: boolean }
+  | { type: "done" }
+  | { type: "failed"; error: string };
+
+export const presetList = () => invoke<Preset[]>("preset_list");
+export const scaffoldProject = (
+  parentPath: string,
+  name: string,
+  preset: string,
+  channel: Channel<ScaffoldEvent>,
+) => invoke<void>("scaffold_project", { parentPath, name, preset, channel });
+export const scaffoldCancel = (name: string, parentPath: string) =>
+  invoke<void>("scaffold_cancel", { name, parentPath });
+
+/** `<parent>/<name>` using the parent's own separator style. */
+export function joinPath(parent: string, name: string): string {
+  const sep = parent.includes("\\") ? "\\" : "/";
+  return parent.endsWith(sep) ? `${parent}${name}` : `${parent}${sep}${name}`;
+}
+
+/** Parent folder of a path (both separator styles). */
+export function parentPathOf(path: string): string {
+  const trimmed = path.replace(/[\\/]+$/, "");
+  const index = Math.max(trimmed.lastIndexOf("\\"), trimmed.lastIndexOf("/"));
+  return index > 0 ? trimmed.slice(0, index) : trimmed;
+}
 export const proxyEnsure = () => invoke<ProxyStatus>("proxy_ensure");
 export const wslListDistros = () => invoke<WslDistro[]>("wsl_list_distros");
 export const wslCheckDocker = (distro: string) =>
