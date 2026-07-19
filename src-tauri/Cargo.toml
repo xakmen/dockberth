@@ -1,6 +1,6 @@
 [package]
 name = "dockberth"
-version = "0.1.1"
+version = "0.1.2"
 description = "Local dev environments for any stack — Docker under the hood, GUI on top"
 authors = ["Dockberth contributors"]
 edition = "2021"
