@@ -31,6 +31,7 @@ pub fn run() {
         .manage(logs::LogSessions::default())
         .invoke_handler(tauri::generate_handler![
             docker::docker_version,
+            docker::docker_start,
             proxy::proxy_ensure,
             hosts::hosts_ensure,
             hosts::hosts_repair,

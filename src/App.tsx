@@ -327,6 +327,8 @@ function App() {
         }
         docker={docker.status}
         dockerLoading={docker.loading}
+        dockerStarting={docker.starting}
+        onStartDocker={docker.startDocker}
         proxy={proxy}
         onProxyRetry={() => void runProxyEnsure()}
       />

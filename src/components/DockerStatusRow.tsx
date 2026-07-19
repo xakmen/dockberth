@@ -1,13 +1,18 @@
-import type { DockerStatus } from "@/lib/docker";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { DOCKER_INSTALL_URL, type DockerStatus } from "@/lib/docker";
 import type { ProxyStatus } from "@/lib/projects";
 
 /** Compact engine-status rows at the bottom of the sidebar. */
 export function DockerStatusRow({
   status,
   loading,
+  starting,
+  onStartDocker,
 }: {
   status: DockerStatus | null;
   loading: boolean;
+  starting: boolean;
+  onStartDocker: () => void;
 }) {
   if (loading) {
     return (
@@ -33,18 +38,40 @@ export function DockerStatusRow({
     );
   }
 
+  // Docker Desktop was launched; waiting for the daemon to come up.
+  if (starting) {
+    return (
+      <div className="flex items-center gap-2 px-1 py-0.5 text-[11px] text-muted-foreground">
+        <span className="size-1.5 shrink-0 rounded-full bg-status-starting" />
+        Starting Docker…
+      </div>
+    );
+  }
+
+  // Installed but the daemon is down → offer to start it; otherwise link
+  // to the Docker Desktop download page.
+  const installed = status?.installed ?? false;
   return (
-    <div className="flex items-center gap-2 px-1 py-0.5 text-[11px] text-status-error">
+    <div
+      className="flex items-center gap-2 px-1 py-0.5 text-[11px] text-status-error"
+      title={status?.error ?? undefined}
+    >
       <span className="size-1.5 shrink-0 rounded-full bg-status-error" />
-      Docker not found
+      {installed ? "Docker not running" : "Docker not found"}
       <span className="flex-1" />
-      {/* TODO: open the Docker Desktop install page via the opener plugin */}
       <a
         href="#"
-        onClick={(e) => e.preventDefault()}
+        onClick={(e) => {
+          e.preventDefault();
+          if (installed) {
+            onStartDocker();
+          } else {
+            void openUrl(DOCKER_INSTALL_URL);
+          }
+        }}
         className="text-[10.5px] text-primary hover:underline"
       >
-        Install
+        {installed ? "Start" : "Install"}
       </a>
     </div>
   );

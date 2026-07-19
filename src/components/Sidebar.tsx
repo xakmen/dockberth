@@ -43,6 +43,8 @@ interface SidebarProps {
   onReportBug: () => void;
   docker: DockerStatus | null;
   dockerLoading: boolean;
+  dockerStarting: boolean;
+  onStartDocker: () => void;
   proxy: ProxyStatus | null;
   onProxyRetry: () => void;
 }
@@ -62,6 +64,8 @@ export function Sidebar({
   onReportBug,
   docker,
   dockerLoading,
+  dockerStarting,
+  onStartDocker,
   proxy,
   onProxyRetry,
 }: SidebarProps) {
@@ -218,7 +222,12 @@ export function Sidebar({
           </DropdownMenu>
         </div>
         <div className="flex flex-col gap-1">
-          <DockerStatusRow status={docker} loading={dockerLoading} />
+          <DockerStatusRow
+            status={docker}
+            loading={dockerLoading}
+            starting={dockerStarting}
+            onStartDocker={onStartDocker}
+          />
           {docker?.running ? (
             <ProxyStatusRow proxy={proxy} onRetry={onProxyRetry} />
           ) : null}
