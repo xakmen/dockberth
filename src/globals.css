@@ -1,0 +1,145 @@
+/* Dockberth theme — ported from Claude Design handoff (Dockberth Mockups)
+ * Dark-first. Tailwind v4 + shadcn/ui (new-york, CSS variables).
+ * Fonts: Inter (UI), JetBrains Mono (domains, paths, logs, chips) — bundled
+ * via @fontsource, imported in src/main.tsx.
+ */
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* The app is dark-first: <html class="dark"> is set in index.html so that
+ * shadcn's dark: variants apply. A `.light` block may be added later. */
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-border: var(--accent-border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-border: var(--sidebar-border);
+
+  /* Dockberth-specific status colors */
+  --color-status-running: var(--status-running);
+  --color-status-stopped: var(--status-stopped);
+  --color-status-starting: var(--status-starting);
+  --color-status-error: var(--status-error);
+  --color-status-running-text: var(--status-running-text);
+
+  /* Extra surfaces/inks from the mockups */
+  --color-faint: var(--faint);
+  --color-soft: var(--soft);
+  --color-input-background: var(--input-background);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-primary-hover: var(--primary-hover);
+
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-lg: 10px; /* cards */
+  --radius-md: 8px; /* controls, buttons, inputs */
+  --radius-sm: 5px; /* small chips */
+}
+
+:root {
+  /* Dark is the default theme */
+  --background: #0a0e13; /* app background */
+  --foreground: #e3e9ef;
+
+  --card: #0e131a;
+  --card-foreground: #e3e9ef;
+  --popover: #0e131a;
+  --popover-foreground: #e3e9ef;
+
+  --primary: #3fc1d4; /* harbor teal */
+  --primary-foreground: #04252b;
+
+  --secondary: #141b24; /* neutral chip bg */
+  --secondary-foreground: #aeb9c4;
+
+  --muted: #10161e;
+  --muted-foreground: #7d8b99;
+
+  /* Accent = teal tint used for selected sidebar item, logo tile, WP chip */
+  --accent: #0f3038;
+  --accent-foreground: #3fc1d4;
+  --accent-border: #1e5a66; /* pair with accent surfaces */
+
+  --destructive: #ef5f52;
+  --destructive-foreground: #e3e9ef;
+
+  --border: #1c2530; /* card borders, dividers (#171f29 for subtle) */
+  --input: #2a3542; /* control borders */
+  --ring: #3fc1d4;
+
+  --sidebar: #0c1117; /* also titlebar */
+  --sidebar-border: #171f29;
+
+  /* Project/service status */
+  --status-running: #46c669;
+  --status-starting: #e0a63e;
+  --status-stopped: #49535e;
+  --status-error: #ef5f52;
+  --status-running-text: #5ed57f; /* badge text on the running pill */
+
+  /* Extra surfaces/inks from the mockups */
+  --faint: #55636f; /* section labels, placeholders, kbd hints */
+  --soft: #c6d0d9; /* outline-button text, mono paths */
+  --input-background: #0f141b; /* search/filter inputs */
+  --border-subtle: #1f2833; /* input borders, small chips */
+  --border-strong: #3a4756; /* hovered control borders */
+  --primary-hover: #5fd0e0; /* hovered primary buttons */
+
+  --radius: 8px;
+}
+
+/* Light theme deferred (dark-first product). Add a `.light` block later. */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-size: 13px;
+  }
+}
+
+/* Selected sidebar item (mockup: #132631 bg + #1b4a56 border) */
+.sidebar-item-active {
+  background: #132631;
+  border: 1px solid #1b4a56;
+}
+
+/* Running status dot glow from the mockup */
+.dot-running {
+  background: var(--status-running);
+  box-shadow: 0 0 6px rgb(70 198 105 / 0.5);
+}
+
+/* Section labels: 11px / 600 / letter-spacing 1.1px, color #55636f */
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.1px;
+  color: #55636f;
+  text-transform: uppercase;
+}

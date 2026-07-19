@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#06090d;font-family:'Inter',system-ui,sans-serif;}
+a{color:#3fc1d4;text-decoration:none}a:hover{color:#6bd4e3;text-decoration:underline}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#1f2833;border-radius:5px}::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+<section style="padding:64px;display:flex;flex-direction:column;gap:56px;align-items:flex-start;color:#e3e9ef">
+<div style="display:flex;flex-direction:column;gap:8px;max-width:760px">
+  <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;color:#3fc1d4;text-transform:uppercase">Dockberth · Desktop mockups</div>
+  <div style="font-size:26px;font-weight:600;letter-spacing:-0.3px">Docker dev environments, moored locally</div>
+  <div style="font-size:13px;line-height:1.6;color:#7d8b99">Four screens at 1200×800 (Windows). Dark developer-tool theme, teal harbor accent, shadcn/ui-compatible primitives. Design tokens at the bottom.</div>
+</div>
+
+<!-- ============ SCREEN 1 · PROJECT DETAILS ============ -->
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#7d8b99"><span style="color:#3fc1d4">01</span> · Project details — Overview tab</div>
+<div data-screen-label="Screen 1 — Project details" style="width:1200px;height:800px;background:#0a0e13;border:1px solid #202a36;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.5);font-size:13px">
+  <div style="height:38px;display:flex;align-items:center;padding:0 8px 0 14px;gap:9px;border-bottom:1px solid #171f29;background:#0c1117;flex-shrink:0">
+    <div style="width:16px;height:16px;border-radius:5px;background:#0f3038;border:1px solid #1e5a66;display:flex;align-items:center;justify-content:center"><div style="width:5px;height:5px;border-radius:50%;background:#3fc1d4"></div></div>
+    <div style="font-size:12px;color:#7d8b99;font-weight:500">Dockberth</div>
+    <div style="flex:1"></div>
+    <div style="display:flex;color:#55636f;font-size:11px">
+      <div style="width:44px;height:38px;display:flex;align-items:center;justify-content:center">─</div>
+      <div style="width:44px;height:38px;display:flex;align-items:center;justify-content:center;font-size:10px">▢</div>
+      <div style="width:44px;height:38px;display:flex;align-items:center;justify-content:center">✕</div>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;min-height:0">
+    <!-- sidebar -->
+    <div style="width:280px;flex-shrink:0;border-right:1px solid #171f29;display:flex;flex-direction:column;background:#0c1117">
+      <div style="display:flex;align-items:center;gap:10px;padding:16px 16px 12px">
+        <div style="width:28px;height:28px;border-radius:8px;background:#0f3038;border:1px solid #1e5a66;display:flex;align-items:center;justify-content:center;flex-shrink:0"><div style="width:12px;height:8px;border:1.5px solid #3fc1d4;border-top:none;border-radius:0 0 4px 4px"></div></div>
+        <div style="font-size:14.5px;font-weight:600">Dockberth</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#55636f;background:#10161e;border:1px solid #1f2833;border-radius:5px;padding:2px 6px">v0.4.2</div>
+      </div>
+      <div style="margin:0 12px 12px;display:flex;align-items:center;gap:8px;background:#0f141b;border:1px solid #1f2833;border-radius:8px;padding:7px 10px;color:#55636f;font-size:12.5px">
+        <span style="font-size:13px">⌕</span><span style="flex:1">Search projects…</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;border:1px solid #1f2833;border-radius:4px;padding:1px 5px">⌃K</span>
+      </div>
+      <div style="padding:2px 20px 6px;font-size:10.5px;font-weight:600;letter-spacing:1.2px;color:#55636f">PROJECTS · 5</div>
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;gap:1px;padding:0 8px">
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:#132631;border:1px solid #1b4a56">
+          <span style="width:8px;height:8px;border-radius:50%;background:#46c669;box-shadow:0 0 6px rgba(70,198,105,.5);flex-shrink:0"></span>
+          <span style="flex:1;font-weight:500;color:#e3e9ef">aquashop</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#3fc1d4;background:#0f3038;border-radius:4px;padding:2px 5px">WP</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px" style-hover="background:#10161e">
+          <span style="width:8px;height:8px;border-radius:50%;background:#46c669;flex-shrink:0"></span>
+          <span style="flex:1;color:#aeb9c4">chandlery</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#7d8b99;background:#141b24;border-radius:4px;padding:2px 5px">NODE</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px" style-hover="background:#10161e">
+          <span style="width:8px;height:8px;border-radius:50%;background:#e0a63e;flex-shrink:0"></span>
+          <span style="flex:1;color:#aeb9c4">portside-api</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#7d8b99;background:#141b24;border-radius:4px;padding:2px 5px">LARAVEL</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px" style-hover="background:#10161e">
+          <span style="width:8px;height:8px;border-radius:50%;background:#49535e;flex-shrink:0"></span>
+          <span style="flex:1;color:#aeb9c4">brine-blog</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#7d8b99;background:#141b24;border-radius:4px;padding:2px 5px">WP</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px" style-hover="background:#10161e">
+          <span style="width:8px;height:8px;border-radius:50%;background:#49535e;flex-shrink:0"></span>
+          <span style="flex:1;color:#aeb9c4">moorings</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#7d8b99;background:#141b24;border-radius:4px;padding:2px 5px">LARAVEL</span>
+        </div>
+      </div>
+      <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:8px;border:1px solid #2a3542;color:#c6d0d9;font-weight:500;font-size:12.5px;cursor:pointer" style-hover="border-color:#3fc1d4;color:#e3e9ef">+ New project</div>
+        <sc-if value="{{ dockerRunning }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:8px;padding:2px 4px;font-size:11px;color:#7d8b99"><span style="width:6px;height:6px;border-radius:50%;background:#46c669"></span>Docker running<span style="flex:1"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#55636f">v27.1</span></div>
+        </sc-if>
+        <sc-if value="{{ dockerDown }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:8px;padding:2px 4px;font-size:11px;color:#ef5f52"><span style="width:6px;height:6px;border-radius:50%;background:#ef5f52"></span>Docker not found<span style="flex:1"></span><a href="#t1" style="font-size:10.5px">Install</a></div>
+        </sc-if>
+      </div>
+    </div>
+    <!-- main -->
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+      <div style="padding:24px 28px 0;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="font-size:22px;font-weight:600;letter-spacing:-0.2px">aquashop</div>
+          <div style="display:flex;align-items:center;gap:6px;background:rgba(70,198,105,.1);border:1px solid rgba(70,198,105,.35);color:#5ed57f;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#46c669"></span>Running</div>
+          <a href="#t1" style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#3fc1d4;display:flex;align-items:center;gap:5px">aquashop.test<span style="font-size:10px">↗</span></a>
+          <div style="flex:1"></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="display:flex;align-items:center;gap:7px;background:#3fc1d4;color:#04252b;border-radius:8px;padding:8px 16px;font-weight:600;font-size:12.5px;cursor:pointer" style-hover="background:#5fd0e0">■ Stop</div>
+            <div style="display:flex;align-items:center;gap:7px;border:1px solid #2a3542;color:#c6d0d9;border-radius:8px;padding:8px 14px;font-weight:500;font-size:12.5px;cursor:pointer" style-hover="border-color:#3a4756">⟳ Restart</div>
+            <div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1px solid #2a3542;border-radius:8px;color:#7d8b99;cursor:pointer" style-hover="border-color:#3a4756">⋯</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:24px;border-bottom:1px solid #171f29;font-size:13px;font-weight:500">
+          <div style="padding:0 2px 11px;color:#e3e9ef;border-bottom:2px solid #3fc1d4;margin-bottom:-1px">Overview</div>
+          <div style="padding:0 2px 11px;color:#7d8b99;cursor:pointer" style-hover="color:#c6d0d9">Logs</div>
+          <div style="padding:0 2px 11px;color:#7d8b99;cursor:pointer" style-hover="color:#c6d0d9">Services</div>
+        </div>
+      </div>
+      <div style="flex:1;overflow:hidden;padding:20px 28px 28px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;gap:16px">
+        <div style="background:#0e131a;border:1px solid #1c2530;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:1.1px;color:#55636f">STACK</div>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:13px">
+            <div style="display:flex;justify-content:space-between"><span style="color:#7d8b99">Type</span><span style="font-weight:500">WordPress 6.7</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#7d8b99">PHP</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px">8.3</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#7d8b99">Database</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px">MariaDB 10.11</span></div>
+          </div>
+        </div>
+        <div style="background:#0e131a;border:1px solid #1c2530;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:1.1px;color:#55636f">PATH</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#c6d0d9;line-height:1.6;word-break:break-all">\\wsl$\Ubuntu-22.04\home\dev\sites\aquashop</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#3fc1d4;background:#0f3038;border:1px solid #1e5a66;border-radius:5px;padding:3px 7px">WSL · Ubuntu-22.04</span>
+            <a href="#t1" style="font-size:11.5px;color:#7d8b99" style-hover="color:#3fc1d4">Open folder ↗</a>
+          </div>
+        </div>
+        <div style="grid-column:1 / -1;background:#0e131a;border:1px solid #1c2530;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:6px;min-height:0">
+          <div style="font-size:11px;font-weight:600;letter-spacing:1.1px;color:#55636f;padding-bottom:8px">SERVICES · 5 RUNNING</div>
+          <div style="display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid #141b24">
+            <span style="width:7px;height:7px;border-radius:50%;background:#46c669"></span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;width:110px">nginx</span><span style="font-size:11.5px;color:#55636f;flex:1">1.27 · port 80, 443</span><span style="font-size:11.5px;color:#7d8b99;border:1px solid #2a3542;border-radius:6px;padding:4px 12px;cursor:pointer" style-hover="color:#e3e9ef;border-color:#3a4756">Shell</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid #141b24">
+            <span style="width:7px;height:7px;border-radius:50%;background:#46c669"></span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;width:110px">php-fpm</span><span style="font-size:11.5px;color:#55636f;flex:1">8.3.14</span><span style="font-size:11.5px;color:#7d8b99;border:1px solid #2a3542;border-radius:6px;padding:4px 12px;cursor:pointer" style-hover="color:#e3e9ef;border-color:#3a4756">Shell</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid #141b24">
+            <span style="width:7px;height:7px;border-radius:50%;background:#46c669"></span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;width:110px">mariadb</span><span style="font-size:11.5px;color:#55636f;flex:1">10.11 · port 3306</span><span style="font-size:11.5px;color:#7d8b99;border:1px solid #2a3542;border-radius:6px;padding:4px 12px;cursor:pointer" style-hover="color:#e3e9ef;border-color:#3a4756">Shell</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid #141b24">
+            <span style="width:7px;height:7px;border-radius:50%;background:#46c669"></span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;width:110px">redis</span><span style="font-size:11.5px;color:#55636f;flex:1">7.4 · port 6379</span><span style="font-size:11.5px;color:#7d8b99;border:1px solid #2a3542;border-radius:6px;padding:4px 12px;cursor:pointer" style-hover="color:#e3e9ef;border-color:#3a4756">Shell</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:9px 4px">
+            <span style="width:7px;height:7px;border-radius:50%;background:#46c669"></span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;width:110px">mailpit</span><span style="font-size:11.5px;color:#55636f;flex:1">SMTP 1025 · UI 8025</span><span style="font-size:11.5px;color:#7d8b99;border:1px solid #2a3542;border-radius:6px;padding:4px 12px;cursor:pointer" style-hover="color:#e3e9ef;border-color:#3a4756">Shell</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ SCREEN 2 · LOGS ============ -->
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#7d8b99"><span style="color:#3fc1d4">02</span> · Logs tab</div>
+<div data-screen-label="Screen 2 — Logs" style="width:1200px;height:800px;background:#0a0e13;border:1px solid #202a36;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.5);font-size:13px">
+  <div style="height:38px;display:flex;align-items:center;padding:0 8px 0 14px;gap:9px;border-bottom:1px solid #171f29;background:#0c1117;flex-shrink:0">
+    <div style="width:16px;height:16px;border-radius:5px;background:#0f3038;border:1px solid #1e5a66;display:flex;align-items:center;justify-content:center"><div style="width:5px;height:5px;border-radius:50%;background:#3fc1d4"></div></div>
+    <div style="font-size:12px;color:#7d8b99;font-weight:500">Dockberth</div>
+    <div style="flex:1"></div>
+    <div style="display:flex;color:#55636f;font-size:11px">
+      <div style="width:44px;height:38px;display:flex;align-items:center;justify-content:center">─</div>
+      <div style="width:44px;height:38px;display:flex;align-items:center;justify-content:center;font-size:10px">▢</div>
+      <div style="width:44px;height:38px;display:flex;align-items:center;justify-content:center">✕</div>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;min-height:0">
+    <div style="width:280px;flex-shrink:0;border-right:1px solid #171f29;display:flex;flex-direction:column;background:#0c1117">
+      <div style="display:flex;align-items:center;gap:10px;padding:16px 16px 12px">
+        <div style="width:28px;height:28px;border-radius:8px;background:#0f3038;border:1px solid #1e5a66;display:flex;align-items:center;justify-content:center;flex-shrink:0"><div style="width:12px;height:8px;border:1.5px solid #3fc1d4;border-top:none;border-radius:0 0 4px 4px"></div></div>
+        <div style="font-size:14.5px;font-weight:600">Dockberth</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#55636f;background:#10161e;border:1px solid #1f2833;border-radius:5px;padding:2px 6px">v0.4.2</div>
+      </div>
+      <div style="margin:0 12px 12px;display:flex;align-items:center;gap:8px;background:#0f141b;border:1px solid #1f2833;border-radius:8px;padding:7px 10px;color:#55636f;font-size:12.5px">
+        <span style="font-size:13px">⌕</span><span style="flex:1">Search projects…</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;border:1px solid #1f2833;border-radius:4px;padding:1px 5px">⌃K</span>
+      </div>
+      <div style="padding:2px 20px 6px;font-size:10.5px;font-weight:600;letter-spacing:1.2px;color:#55636f">PROJECTS · 5</div>
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;gap:1px;padding:0 8px">
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:#132631;border:1px solid #1b4a56">
+          <span style="width:8px;height:8px;border-radius:50%;background:#46c669;box-shadow:0 0 6px rgba(70,198,105,.5);flex-shrink:0"></span>
+          <span style="flex:1;font-weight:500">aquashop</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#3fc1d4;background:#0f3038;border-radius:4px;padding:2px 5px">WP</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px">
+          <span style="width:8px;height:8px;border-radius:50%;background:#46c669;flex-shrink:0"></span>
+          <span style="flex:1;color:#aeb9c4">chandlery</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#7d8b99;background:#141b24;border-radius:4px;padding:2px 5px">NODE</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px">
+          <span style="width:8px;height:8px;border-radius:50%;background:#e0a63e;flex-shrink:0"></span>
+          <span style="flex:1;color:#aeb9c4">portside-api</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#7d8b99;background:#141b24;border-radius:4px;padding:2px 5px">LARAVEL</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px">
+          <span style="width:8px;height:8px;border-radius:50%;background:#49535e;flex-shrink:0"></span>
+          <span style="flex:1;color:#aeb9c4">brine-blog</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#7d8b99;background:#141b24;border-radius:4px;padding:2px 5px">WP</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px">
+          <span style="width:8px;height:8px;border-radius:50%;background:#49535e;flex-shrink:0"></span>
+          <span style="flex:1;color:#aeb9c4">moorings</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#7d8b99;background:#141b24;border-radius:4px;padding:2px 5px">LARAVEL</span>
+        </div>
+      </div>
+      <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:8px;border:1px solid #2a3542;color:#c6d0d9;font-weight:500;font-size:12.5px;cursor:pointer">+ New project</div>
+        <sc-if value="{{ dockerRunning }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:8px;padding:2px 4px;font-size:11px;color:#7d8b99"><span style="width:6px;height:6px;border-radius:50%;background:#46c669"></span>Docker running<span style="flex:1"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#55636f">v27.1</span></div>
+        </sc-if>
+        <sc-if value="{{ dockerDown }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:8px;padding:2px 4px;font-size:11px;color:#ef5f52"><span style="width:6px;height:6px;border-radius:50%;background:#ef5f52"></span>Docker not found<span style="flex:1"></span><a href="#t1" style="font-size:10.5px">Install</a></div>
+        </sc-if>
+      </div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+      <div style="padding:24px 28px 0;display:flex;flex-direction:column;gap:16px;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="font-size:22px;font-weight:600;letter-spacing:-0.2px">aquashop</div>
+          <div style="display:flex;align-items:center;gap:6px;background:rgba(70,198,105,.1);border:1px solid rgba(70,198,105,.35);color:#5ed57f;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#46c669"></span>Running</div>
+          <a href="#t1" style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#3fc1d4;display:flex;align-items:center;gap:5px">aquashop.test<span style="font-size:10px">↗</span></a>
+          <div style="flex:1"></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="display:flex;align-items:center;gap:7px;background:#3fc1d4;color:#04252b;border-radius:8px;padding:8px 16px;font-weight:600;font-size:12.5px;cursor:pointer">■ Stop</div>
+            <div style="display:flex;align-items:center;gap:7px;border:1px solid #2a3542;color:#c6d0d9;border-radius:8px;padding:8px 14px;font-weight:500;font-size:12.5px;cursor:pointer">⟳ Restart</div>
+            <div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1px solid #2a3542;border-radius:8px;color:#7d8b99;cursor:pointer">⋯</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:24px;border-bottom:1px solid #171f29;font-size:13px;font-weight:500">
+          <div style="padding:0 2px 11px;color:#7d8b99;cursor:pointer">Overview</div>
+          <div style="padding:0 2px 11px;color:#e3e9ef;border-bottom:2px solid #3fc1d4;margin-bottom:-1px">Logs</div>
+          <div style="padding:0 2px 11px;color:#7d8b99;cursor:pointer">Services</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 28px;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:8px;border:1px solid #2a3542;border-radius:8px;padding:7px 12px;font-size:12.5px;color:#c6d0d9;cursor:pointer">All services<span style="color:#55636f;font-size:9px">▼</span></div>
+        <div style="display:flex;align-items:center;gap:8px;background:#0f141b;border:1px solid #1f2833;border-radius:8px;padding:7px 12px;font-size:12.5px;color:#55636f;flex:1;max-width:280px"><span>⌕</span>Filter logs…</div>
+        <div style="flex:1"></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#c6d0d9;cursor:pointer">
+          <sc-if value="{{ followTail }}" hint-placeholder-val="{{ true }}">
+            <span style="width:30px;height:17px;border-radius:999px;background:#3fc1d4;position:relative;display:inline-block"><span style="position:absolute;top:2px;right:2px;width:13px;height:13px;border-radius:50%;background:#04252b"></span></span>
+          </sc-if>
+          <sc-if value="{{ followOff }}" hint-placeholder-val="{{ false }}">
+            <span style="width:30px;height:17px;border-radius:999px;background:#2a3542;position:relative;display:inline-block"><span style="position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#7d8b99"></span></span>
+          </sc-if>
+          Follow tail
+        </div>
+        <div style="font-size:12px;color:#7d8b99;border:1px solid #2a3542;border-radius:8px;padding:7px 14px;cursor:pointer" style-hover="color:#e3e9ef;border-color:#3a4756">Clear</div>
+      </div>
+      <div style="flex:1;margin:0 28px 24px;background:#070a0e;border:1px solid #171f29;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;min-height:0">
+        <div style="flex:1;overflow:hidden;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.85;color:#aeb9c4;white-space:pre-wrap;word-break:break-all">
+<div><span style="color:#3d4b58">14:02:09.114</span> <span style="color:#3fc1d4">nginx    </span> 172.19.0.1 - - "GET / HTTP/2.0" <span style="color:#46c669">200</span> 14208 "Mozilla/5.0" 0.041s</div>
+<div><span style="color:#3d4b58">14:02:09.371</span> <span style="color:#3fc1d4">nginx    </span> 172.19.0.1 - - "GET /wp-content/themes/aqua/style.css HTTP/2.0" <span style="color:#46c669">200</span> 88412</div>
+<div><span style="color:#3d4b58">14:02:10.006</span> <span style="color:#b48ce0">php-fpm  </span> NOTICE: [pool www] child 12 started</div>
+<div><span style="color:#3d4b58">14:02:11.542</span> <span style="color:#3fc1d4">nginx    </span> 172.19.0.1 - - "GET /wp-admin/ HTTP/2.0" <span style="color:#46c669">200</span> 68123 "Mozilla/5.0" 0.318s</div>
+<div><span style="color:#3d4b58">14:02:11.799</span> <span style="color:#b48ce0">php-fpm  </span> <span style="color:#e0a63e">WARNING</span>: [pool www] child 12 said into stderr: "PHP Deprecated: Creation of dynamic property WC_Cart::$coupons in /var/www/html/wp-content/plugins/woo/cart.php on line 214"</div>
+<div><span style="color:#3d4b58">14:02:12.030</span> <span style="color:#7fb069">mariadb  </span> [Note] InnoDB: Buffer pool(s) load completed at 260719 14:02:12</div>
+<div><span style="color:#3d4b58">14:02:13.484</span> <span style="color:#3fc1d4">nginx    </span> 172.19.0.1 - - "POST /wp-admin/admin-ajax.php HTTP/2.0" <span style="color:#46c669">200</span> 47 "action=heartbeat" 0.092s</div>
+<div><span style="color:#3d4b58">14:02:14.100</span> <span style="color:#3fc1d4">nginx    </span> 172.19.0.1 - - "GET /shop/anchors/ HTTP/2.0" <span style="color:#46c669">200</span> 23881 "Mozilla/5.0" 0.204s</div>
+<div><span style="color:#3d4b58">14:02:15.216</span> <span style="color:#3fc1d4">nginx    </span> 172.19.0.1 - - "GET /favicon.ico HTTP/2.0" <span style="color:#e0a63e">404</span> 153 "-" 0.002s</div>
+<div><span style="color:#3d4b58">14:02:16.882</span> <span style="color:#b48ce0">php-fpm  </span> NOTICE: [pool www] pm.status: 3 active, 5 idle, 8 total</div>
+<div><span style="color:#3d4b58">14:02:18.310</span> <span style="color:#3fc1d4">nginx    </span> 172.19.0.1 - - "GET /checkout/ HTTP/2.0" <span style="color:#46c669">200</span> 31240 "Mozilla/5.0" 0.377s</div>
+<div><span style="color:#3d4b58">14:02:18.644</span> <span style="color:#7fb069">mariadb  </span> [Warning] Aborted connection 214 to db: 'aquashop' user: 'wp' (Got timeout reading communication packets)</div>
+<div><span style="color:#3d4b58">14:02:19.001</span> <span style="color:#b48ce0">php-fpm  </span> <span style="color:#ef5f52">ERROR</span>: [pool www] child 9 exited on signal 11 (SIGSEGV) after 3812.442 seconds from start</div>
+<div><span style="color:#3d4b58">14:02:19.004</span> <span style="color:#b48ce0">php-fpm  </span> NOTICE: [pool www] child 17 started</div>
+<div><span style="color:#3d4b58">14:02:21.590</span> <span style="color:#3fc1d4">nginx    </span> 172.19.0.1 - - "GET /wp-json/wc/store/v1/cart HTTP/2.0" <span style="color:#46c669">200</span> 2117 "-" 0.061s</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 16px;border-top:1px solid #141b24;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#55636f;flex-shrink:0"><span style="width:6px;height:6px;border-radius:50%;background:#46c669"></span>streaming · 15 lines · all services</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ SCREEN 3 · NEW PROJECT WIZARD ============ -->
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#7d8b99"><span style="color:#3fc1d4">03</span> · New project wizard — step 2 of 3</div>
+<div data-screen-label="Screen 3 — New project wizard" style="width:1200px;height:800px;background:#0a0e13;border:1px solid #202a36;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.5);font-size:13px;position:relative">
+  <div style="height:38px;display:flex;align-items:center;padding:0 8px 0 14px;gap:9px;border-bottom:1px solid #171f29;background:#0c1117;flex-shrink:0">
+    <div style="width:16px;height:16px;border-radius:5px;background:#0f3038;border:1px solid #1e5a66;display:flex;align-items:center;justify-content:center"><div style="width:5px;height:5px;border-radius:50%;background:#3fc1d4"></div></div>
+    <div style="font-size:12px;color:#7d8b99;font-weight:500">Dockberth</div>
+    <div style="flex:1"></div>
+    <div style="display:flex;color:#55636f;font-size:11px">
+      <div style="width:44px;height:38px;display:flex;align-items:center;justify-content:center">─</div>
+      <div style="width:44px;height:38px;display:flex;align-items:center;justify-content:center;font-size:10px">▢</div>
+      <div style="width:44px;height:38px;display:flex;align-items:center;justify-content:center">✕</div>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;min-height:0;filter:brightness(.55) saturate(.8)">
+    <div style="width:280px;flex-shrink:0;border-right:1px solid #171f29;display:flex;flex-direction:column;background:#0c1117">
+      <div style="display:flex;align-items:center;gap:10px;padding:16px 16px 12px">
+        <div style="width:28px;height:28px;border-radius:8px;background:#0f3038;border:1px solid #1e5a66;display:flex;align-items:center;justify-content:center;flex-shrink:0"><div style="width:12px;height:8px;border:1.5px solid #3fc1d4;border-top:none;border-radius:0 0 4px 4px"></div></div>
+        <div style="font-size:14.5px;font-weight:600">Dockberth</div>
+      </div>
+      <div style="margin:0 12px 12px;display:flex;align-items:center;gap:8px;background:#0f141b;border:1px solid #1f2833;border-radius:8px;padding:7px 10px;color:#55636f;font-size:12.5px"><span>⌕</span>Search projects…</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:1px;padding:0 8px">
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:#132631"><span style="width:8px;height:8px;border-radius:50%;background:#46c669"></span><span style="flex:1;font-weight:500">aquashop</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px"><span style="width:8px;height:8px;border-radius:50%;background:#46c669"></span><span style="flex:1;color:#aeb9c4">chandlery</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px"><span style="width:8px;height:8px;border-radius:50%;background:#e0a63e"></span><span style="flex:1;color:#aeb9c4">portside-api</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px"><span style="width:8px;height:8px;border-radius:50%;background:#49535e"></span><span style="flex:1;color:#aeb9c4">brine-blog</span></div>
+      </div>
+      <div style="padding:12px"><div style="display:flex;align-items:center;justify-content:center;padding:9px;border-radius:8px;border:1px solid #2a3542;color:#c6d0d9;font-size:12.5px">+ New project</div></div>
+    </div>
+    <div style="flex:1;padding:24px 28px;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="font-size:22px;font-weight:600">aquashop</div>
+        <div style="background:rgba(70,198,105,.1);border:1px solid rgba(70,198,105,.35);color:#5ed57f;border-radius:999px;padding:3px 10px;font-size:11.5px">Running</div>
+      </div>
+      <div style="height:1px;background:#171f29"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="height:130px;background:#0e131a;border:1px solid #1c2530;border-radius:10px"></div>
+        <div style="height:130px;background:#0e131a;border:1px solid #1c2530;border-radius:10px"></div>
+        <div style="grid-column:1/-1;height:280px;background:#0e131a;border:1px solid #1c2530;border-radius:10px"></div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;inset:38px 0 0;background:rgba(4,6,9,.55);display:flex;align-items:center;justify-content:center">
+    <div style="width:560px;background:#0e131a;border:1px solid #242f3c;border-radius:12px;box-shadow:0 32px 80px rgba(0,0,0,.6);display:flex;flex-direction:column">
+      <div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center">
+          <div style="font-size:16px;font-weight:600;flex:1">New project</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#55636f">STEP 2 / 3</div>
+        </div>
+        <div style="display:flex;gap:5px;padding:10px 0 4px">
+          <div style="height:3px;flex:1;border-radius:2px;background:#3fc1d4"></div>
+          <div style="height:3px;flex:1;border-radius:2px;background:#3fc1d4"></div>
+          <div style="height:3px;flex:1;border-radius:2px;background:#1f2833"></div>
+        </div>
+      </div>
+      <div style="padding:16px 24px 20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px;background:#0f3038;border:1px solid #1e5a66;border-radius:8px;padding:11px 14px">
+          <span style="color:#5fd0e0;font-size:14px">✦</span>
+          <div style="font-size:12.5px;color:#a8e2ea"><span style="font-weight:600;color:#d4f2f6">WordPress detected</span> — wp-config.php found</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-size:12px;font-weight:500;color:#c6d0d9">Project name</div>
+          <div style="display:flex;align-items:center;background:#0f141b;border:1px solid #2a3542;border-radius:8px;padding:9px 12px;font-size:13px">aquashop<span style="width:1px;height:15px;background:#3fc1d4;margin-left:1px"></span></div>
+          <div style="font-size:11.5px;color:#7d8b99">Local domain: <span style="font-family:'JetBrains Mono',monospace;color:#3fc1d4">aquashop.test</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:12px;font-weight:500;color:#c6d0d9">PHP version</div>
+            <div style="display:flex;align-items:center;background:#0f141b;border:1px solid #2a3542;border-radius:8px;padding:9px 12px;font-size:13px;cursor:pointer"><span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:12.5px">8.3</span><span style="color:#55636f;font-size:9px">▼</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:12px;font-weight:500;color:#c6d0d9">Database</div>
+            <div style="display:flex;align-items:center;background:#0f141b;border:1px solid #2a3542;border-radius:8px;padding:9px 12px;font-size:13px;cursor:pointer"><span style="flex:1">MariaDB 10.11</span><span style="color:#55636f;font-size:9px">▼</span></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:12px;font-weight:500;color:#c6d0d9">Optional services</div>
+          <div style="display:flex;gap:10px">
+            <div style="flex:1;display:flex;align-items:center;gap:9px;border:1px solid #1e5a66;background:#0f242c;border-radius:8px;padding:10px 12px;cursor:pointer">
+              <span style="width:15px;height:15px;border-radius:4px;background:#3fc1d4;color:#04252b;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">✓</span>
+              <span style="font-size:12.5px">Redis</span>
+            </div>
+            <div style="flex:1;display:flex;align-items:center;gap:9px;border:1px solid #1e5a66;background:#0f242c;border-radius:8px;padding:10px 12px;cursor:pointer">
+              <span style="width:15px;height:15px;border-radius:4px;background:#3fc1d4;color:#04252b;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">✓</span>
+              <span style="font-size:12.5px">Mailpit</span>
+            </div>
+            <div style="flex:1;display:flex;align-items:center;gap:9px;border:1px solid #2a3542;border-radius:8px;padding:10px 12px;cursor:pointer" style-hover="border-color:#3a4756">
+              <span style="width:15px;height:15px;border-radius:4px;border:1px solid #3a4756"></span>
+              <span style="font-size:12.5px;color:#aeb9c4">Adminer</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#7d8b99">C:\Users\mika\sites\aquashop</div>
+          <div style="display:flex;align-items:flex-start;gap:9px;background:rgba(224,166,62,.07);border:1px solid rgba(224,166,62,.3);border-radius:8px;padding:10px 13px;font-size:12px;color:#d8b878;line-height:1.5">
+            <span style="font-size:12px;padding-top:1px">◈</span>
+            <span>Project is on C:\ — consider moving it into WSL2 for much faster file performance. <a href="#t1" style="color:#e0a63e;text-decoration:underline">Learn more</a></span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:16px 24px;border-top:1px solid #171f29">
+        <div style="font-size:12.5px;color:#7d8b99;border:1px solid #2a3542;border-radius:8px;padding:8px 16px;cursor:pointer" style-hover="color:#e3e9ef">Back</div>
+        <div style="flex:1"></div>
+        <div style="background:#3fc1d4;color:#04252b;border-radius:8px;padding:8px 20px;font-weight:600;font-size:12.5px;cursor:pointer" style-hover="background:#5fd0e0">Continue</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ SCREEN 4 · EMPTY STATE ============ -->
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#7d8b99"><span style="color:#3fc1d4">04</span> · Empty state — no projects</div>
+<div data-screen-label="Screen 4 — Empty state" style="width:1200px;height:800px;background:#0a0e13;border:1px solid #202a36;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.5);font-size:13px">
+  <div style="height:38px;display:flex;align-items:center;padding:0 8px 0 14px;gap:9px;border-bottom:1px solid #171f29;background:#0c1117;flex-shrink:0">
+    <div style="width:16px;height:16px;border-radius:5px;background:#0f3038;border:1px solid #1e5a66;display:flex;align-items:center;justify-content:center"><div style="width:5px;height:5px;border-radius:50%;background:#3fc1d4"></div></div>
+    <div style="font-size:12px;color:#7d8b99;font-weight:500">Dockberth</div>
+    <div style="flex:1"></div>
+    <div style="display:flex;color:#55636f;font-size:11px">
+      <div style="width:44px;height:38px;display:flex;align-items:center;justify-content:center">─</div>
+      <div style="width:44px;height:38px;display:flex;align-items:center;justify-content:center;font-size:10px">▢</div>
+      <div style="width:44px;height:38px;display:flex;align-items:center;justify-content:center">✕</div>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;min-height:0">
+    <div style="width:280px;flex-shrink:0;border-right:1px solid #171f29;display:flex;flex-direction:column;background:#0c1117">
+      <div style="display:flex;align-items:center;gap:10px;padding:16px 16px 12px">
+        <div style="width:28px;height:28px;border-radius:8px;background:#0f3038;border:1px solid #1e5a66;display:flex;align-items:center;justify-content:center;flex-shrink:0"><div style="width:12px;height:8px;border:1.5px solid #3fc1d4;border-top:none;border-radius:0 0 4px 4px"></div></div>
+        <div style="font-size:14.5px;font-weight:600">Dockberth</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#55636f;background:#10161e;border:1px solid #1f2833;border-radius:5px;padding:2px 6px">v0.4.2</div>
+      </div>
+      <div style="margin:0 12px 12px;display:flex;align-items:center;gap:8px;background:#0f141b;border:1px solid #1f2833;border-radius:8px;padding:7px 10px;color:#55636f;font-size:12.5px">
+        <span style="font-size:13px">⌕</span><span style="flex:1">Search projects…</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;border:1px solid #1f2833;border-radius:4px;padding:1px 5px">⌃K</span>
+      </div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:12px;color:#3d4b58">No projects</div>
+      <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:8px;border:1px solid #2a3542;color:#c6d0d9;font-weight:500;font-size:12.5px;cursor:pointer" style-hover="border-color:#3fc1d4;color:#e3e9ef">+ New project</div>
+        <sc-if value="{{ dockerRunning }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:8px;padding:2px 4px;font-size:11px;color:#7d8b99"><span style="width:6px;height:6px;border-radius:50%;background:#46c669"></span>Docker running<span style="flex:1"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#55636f">v27.1</span></div>
+        </sc-if>
+        <sc-if value="{{ dockerDown }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:8px;padding:2px 4px;font-size:11px;color:#ef5f52"><span style="width:6px;height:6px;border-radius:50%;background:#ef5f52"></span>Docker not found<span style="flex:1"></span><a href="#t1" style="font-size:10.5px">Install</a></div>
+        </sc-if>
+      </div>
+    </div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:20px;max-width:380px;text-align:center;padding-bottom:40px">
+        <div style="position:relative;width:150px;height:96px;display:flex;align-items:flex-end;justify-content:center">
+          <div style="width:120px;height:64px;border:1.5px dashed #2a3d49;border-top:none;border-radius:0 0 12px 12px;position:relative">
+            <div style="position:absolute;top:-4px;left:-5px;width:8px;height:8px;border-radius:50%;border:1.5px solid #2a3d49;background:#0a0e13"></div>
+            <div style="position:absolute;top:-4px;right:-5px;width:8px;height:8px;border-radius:50%;border:1.5px solid #2a3d49;background:#0a0e13"></div>
+          </div>
+          <div style="position:absolute;bottom:-12px;left:10px;right:10px;height:6px;display:flex;gap:6px;align-items:center;justify-content:center">
+            <div style="width:26px;height:1.5px;background:#1b4a56;border-radius:2px"></div>
+            <div style="width:14px;height:1.5px;background:#173a44;border-radius:2px"></div>
+            <div style="width:32px;height:1.5px;background:#1b4a56;border-radius:2px"></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:18px;font-weight:600">No projects moored yet</div>
+          <div style="font-size:13px;line-height:1.6;color:#7d8b99;text-wrap:pretty">Create your first project — Dockberth will generate the Docker environment for you.</div>
+        </div>
+        <div style="background:#3fc1d4;color:#04252b;border-radius:8px;padding:9px 20px;font-weight:600;font-size:13px;cursor:pointer" style-hover="background:#5fd0e0">+ New project</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ DESIGN TOKENS ============ -->
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#7d8b99"><span style="color:#3fc1d4">◆</span> · Design tokens — for Tailwind / shadcn theme</div>
+<div data-screen-label="Design tokens" style="width:1200px;background:#0c1117;border:1px solid #202a36;border-radius:10px;padding:28px 32px;display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:36px;font-size:12.5px">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="font-size:11px;font-weight:600;letter-spacing:1.1px;color:#55636f">COLOR</div>
+    <div style="display:flex;flex-direction:column;gap:9px;font-family:'JetBrains Mono',monospace;font-size:11.5px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#0a0e13;border:1px solid #2a3542"></span><span style="color:#7d8b99;width:150px">background</span><span>#0A0E13</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#0c1117;border:1px solid #2a3542"></span><span style="color:#7d8b99;width:150px">sidebar / titlebar</span><span>#0C1117</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#0e131a;border:1px solid #2a3542"></span><span style="color:#7d8b99;width:150px">card</span><span>#0E131A</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#0f141b;border:1px solid #2a3542"></span><span style="color:#7d8b99;width:150px">input</span><span>#0F141B</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#1c2530"></span><span style="color:#7d8b99;width:150px">border (card)</span><span>#1C2530</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#2a3542"></span><span style="color:#7d8b99;width:150px">border (control)</span><span>#2A3542</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#e3e9ef"></span><span style="color:#7d8b99;width:150px">foreground</span><span>#E3E9EF</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#7d8b99"></span><span style="color:#7d8b99;width:150px">muted-foreground</span><span>#7D8B99</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#3fc1d4"></span><span style="color:#7d8b99;width:150px">primary (harbor)</span><span>#3FC1D4</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#04252b"></span><span style="color:#7d8b99;width:150px">primary-foreground</span><span>#04252B</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#0f3038;border:1px solid #1e5a66"></span><span style="color:#7d8b99;width:150px">accent tint / border</span><span>#0F3038 / #1E5A66</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#46c669"></span><span style="color:#7d8b99;width:150px">status-running</span><span>#46C669</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#49535e"></span><span style="color:#7d8b99;width:150px">status-stopped</span><span>#49535E</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#e0a63e"></span><span style="color:#7d8b99;width:150px">status-starting</span><span>#E0A63E</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:18px;border-radius:5px;background:#ef5f52"></span><span style="color:#7d8b99;width:150px">status-error</span><span>#EF5F52</span></div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="font-size:11px;font-weight:600;letter-spacing:1.1px;color:#55636f">TYPE</div>
+    <div style="display:flex;flex-direction:column;gap:9px;color:#aeb9c4;line-height:1.5">
+      <div><span style="color:#e3e9ef;font-weight:500">Inter</span> — UI · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#7d8b99">400 / 500 / 600</span></div>
+      <div><span style="font-family:'JetBrains Mono',monospace;color:#e3e9ef;font-weight:500">JetBrains Mono</span> — domains, paths, logs, chips</div>
+      <div style="height:1px;background:#171f29;margin:4px 0"></div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;display:flex;flex-direction:column;gap:7px;color:#7d8b99">
+        <div>22px / 600 <span style="color:#3d4b58">— page title</span></div>
+        <div>16px / 600 <span style="color:#3d4b58">— dialog title</span></div>
+        <div>13px / 400 <span style="color:#3d4b58">— body, controls</span></div>
+        <div>12.5px / 500-600 <span style="color:#3d4b58">— buttons</span></div>
+        <div>11.5px / 400 <span style="color:#3d4b58">— meta, log lines</span></div>
+        <div>11px / 600 +1.1px <span style="color:#3d4b58">— section labels</span></div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:11px;font-weight:600;letter-spacing:1.1px;color:#55636f">SPACING</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#7d8b99;line-height:2">4 · 8 · 12 · 16 · 20 · 24 · 28<br>sidebar 280px · titlebar 38px<br>window 1200 × 800</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:11px;font-weight:600;letter-spacing:1.1px;color:#55636f">RADII &amp; BORDERS</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#7d8b99;line-height:2">radius: 8px controls · 10px cards<br>999px badges · borders 1px<br>shadows: none inside window</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:11px;font-weight:600;letter-spacing:1.1px;color:#55636f">SHADCN MAP</div>
+      <div style="font-size:11.5px;color:#7d8b99;line-height:1.8">Card, Badge, Tabs, Select,<br>Checkbox, Switch, Dialog,<br>DropdownMenu, Input, Button</div>
+    </div>
+  </div>
+</div>
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;dockerRunning&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Demo state&quot;},&quot;followTail&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Demo state&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const dockerRunning = this.props.dockerRunning ?? true;
+    const followTail = this.props.followTail ?? true;
+    return { dockerRunning, dockerDown: !dockerRunning, followTail, followOff: !followTail };
+  }
+}
+</script>
+</body>
+</html>

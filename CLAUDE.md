@@ -35,6 +35,18 @@ helper.
 - Rust commands return raw results (stdout/exit codes/typed structs); no
   hidden retries or business decisions on the Rust side.
 
+## Design
+
+- Design mockups live in `design/dockberth-desktop-mockups/` (HTML handoff
+  bundle from Claude Design). Screen 1 (project details) is the reference for
+  the app shell; tokens are listed at the bottom of the mockup file.
+- The theme is defined once in `src/globals.css` (Tailwind v4 `@theme` +
+  shadcn/ui CSS variables, dark-first). Fonts (Inter, JetBrains Mono) are
+  bundled via `@fontsource` — never load fonts from a CDN.
+- All UI is built from shadcn/ui primitives (`src/components/ui/`) plus theme
+  tokens. **No hardcoded hex values in components** — if a mockup color has no
+  token yet, add it to `src/globals.css` first and reference it by name.
+
 ## MVP scope
 
 1. Dashboard with Docker daemon status (done: `docker_version` command +
