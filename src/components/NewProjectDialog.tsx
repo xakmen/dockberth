@@ -332,7 +332,7 @@ export function NewProjectDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-border-strong/50 bg-card sm:max-w-[560px]">
+      <DialogContent className="max-h-[90vh] overflow-x-hidden overflow-y-auto border-border-strong/50 bg-card sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">New project</DialogTitle>
           <DialogDescription className="text-[12.5px] text-muted-foreground">
@@ -366,7 +366,7 @@ export function NewProjectDialog({
           ))}
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
           {mode === "new" ? (
             <>
               {/* Stack picker */}
@@ -415,10 +415,13 @@ export function NewProjectDialog({
               </div>
 
               {/* Parent folder */}
-              <div className="flex flex-col gap-1.5">
+              <div className="flex min-w-0 flex-col gap-1.5">
                 <Label className={FIELD_LABEL}>Create in</Label>
-                <div className="flex items-center gap-2">
-                  <div className="min-h-[35px] flex-1 truncate rounded-md border border-input bg-input-background px-3 py-2 font-mono text-xs text-soft">
+                <div className="flex min-w-0 items-center gap-2">
+                  <div
+                    title={parentPath || undefined}
+                    className="min-h-[35px] min-w-0 flex-1 truncate rounded-md border border-input bg-input-background px-3 py-2 font-mono text-xs text-soft"
+                  >
                     {parentPath || (
                       <span className="text-faint">No folder selected</span>
                     )}
@@ -434,7 +437,10 @@ export function NewProjectDialog({
                   </Button>
                 </div>
                 {parentPath && name && isValidProjectName(name) ? (
-                  <div className="truncate font-mono text-[11px] text-faint">
+                  <div
+                    title={joinPath(parentPath, name)}
+                    className="min-w-0 truncate font-mono text-[11px] text-faint"
+                  >
                     → {joinPath(parentPath, name)}
                   </div>
                 ) : null}
@@ -443,10 +449,13 @@ export function NewProjectDialog({
           ) : (
             <>
               {/* Folder picker (existing) */}
-              <div className="flex flex-col gap-1.5">
+              <div className="flex min-w-0 flex-col gap-1.5">
                 <Label className={FIELD_LABEL}>Project folder</Label>
-                <div className="flex items-center gap-2">
-                  <div className="min-h-[35px] flex-1 truncate rounded-md border border-input bg-input-background px-3 py-2 font-mono text-xs text-soft">
+                <div className="flex min-w-0 items-center gap-2">
+                  <div
+                    title={path || undefined}
+                    className="min-h-[35px] min-w-0 flex-1 truncate rounded-md border border-input bg-input-background px-3 py-2 font-mono text-xs text-soft"
+                  >
                     {path || <span className="text-faint">No folder selected</span>}
                   </div>
                   <Button
