@@ -1,3 +1,4 @@
+mod atomic;
 mod diagnostics;
 mod docker;
 mod domain;

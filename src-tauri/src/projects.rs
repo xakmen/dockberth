@@ -270,24 +270,24 @@ pub async fn project_create(app: AppHandle, args: CreateArgs) -> Result<ProjectI
     let dockberth_dir = dir.join(".dockberth");
     fs::create_dir_all(&dockberth_dir)
         .map_err(|e| format!("cannot create .dockberth directory: {e}"))?;
-    fs::write(dockberth_dir.join("docker-compose.yml"), compose)
+    crate::atomic::write(&dockberth_dir.join("docker-compose.yml"), compose)
         .map_err(|e| format!("cannot write docker-compose.yml: {e}"))?;
     if preset.base == BaseKind::Php {
         if template::php_needs_build(preset, is_wsl) {
             let php_version = config.php_version.as_deref().unwrap_or_default();
             let dockerfile =
                 template::render_php_dockerfile(preset, php_version, is_wsl, uid, gid);
-            fs::write(dockberth_dir.join("app.Dockerfile"), dockerfile)
+            crate::atomic::write(&dockberth_dir.join("app.Dockerfile"), dockerfile)
                 .map_err(|e| format!("cannot write app.Dockerfile: {e}"))?;
         }
         if !is_wsl {
-            fs::write(dockberth_dir.join("php-fpm-root-run"), template::FPM_ROOT_RUN)
+            crate::atomic::write(&dockberth_dir.join("php-fpm-root-run"), template::FPM_ROOT_RUN)
                 .map_err(|e| format!("cannot write php-fpm-root-run: {e}"))?;
         }
     }
     let config_json = serde_json::to_string_pretty(&config)
         .map_err(|e| format!("cannot serialize config: {e}"))?;
-    fs::write(dockberth_dir.join("config.json"), config_json)
+    crate::atomic::write(&dockberth_dir.join("config.json"), config_json)
         .map_err(|e| format!("cannot write config.json: {e}"))?;
 
     let mut entries = entries;
@@ -642,8 +642,8 @@ async fn rerender_project(
     let project_domain = domain::project_domain(&entry.name, suffix);
     let compose =
         template::render_project_compose(preset, &config, &project_domain, is_wsl, uid, gid)?;
-    fs::write(
-        Path::new(&entry.path).join(".dockberth").join("docker-compose.yml"),
+    crate::atomic::write(
+        &Path::new(&entry.path).join(".dockberth").join("docker-compose.yml"),
         compose,
     )
     .map_err(|e| format!("cannot write docker-compose.yml: {e}"))?;

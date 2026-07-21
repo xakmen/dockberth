@@ -39,7 +39,7 @@ async fn ensure_inner(app: &AppHandle) -> Result<(), String> {
         .join("proxy");
     fs::create_dir_all(&dir).map_err(|e| format!("cannot create proxy dir: {e}"))?;
     let compose_path = dir.join("docker-compose.yml");
-    fs::write(&compose_path, template::proxy_compose())
+    crate::atomic::write(&compose_path, template::proxy_compose())
         .map_err(|e| format!("cannot write proxy compose file: {e}"))?;
 
     // 3. Start (or update) the proxy.
