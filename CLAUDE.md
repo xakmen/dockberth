@@ -69,8 +69,12 @@ helper.
 **MVP shipped in v0.1.0** (July 2026): project onboarding + WordPress
 scaffolding, start/stop with WSL2/NTFS split, Traefik proxy with
 self-heal, hosts managed block, Logs tab, per-service Shell, delete flow,
-signed auto-updates, opt-in crash reporting. Releases: `docs/RELEASING.md`.
-Telemetry rules: `docs/TELEMETRY.md`.
+signed auto-updates. Releases: `docs/RELEASING.md`.
+
+The app has **zero telemetry** — no Sentry, no crash reporting, nothing
+sent anywhere (removed after v0.1.2; archived on the
+`archive/sentry-telemetry` branch). "Report a bug" only prefills a GitHub
+issue the user submits themselves.
 
 Known deferred decisions:
 - Elevation rework (kill repeated UAC): wildcard `.test` DNS via NRPT +
@@ -84,7 +88,7 @@ Known deferred decisions:
 - `npm run tauri dev` — run the app in dev mode.
 - `npm run build` — typecheck (`tsc`) and build the frontend.
 - `cargo test` in `src-tauri/` — Rust unit tests (renderers, presets,
-  hosts parser, scrubbers); keep green, CI runs exactly this.
+  hosts parser); keep green, CI runs exactly this.
 - `npm run changelog` — regenerate CHANGELOG.md (git-cliff).
 - `npm version X.Y.Z` — version bump; syncs Cargo.toml/tauri.conf.json
   via `scripts/sync-version.mjs`. Never edit those versions by hand.

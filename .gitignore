@@ -1,7 +1,6 @@
 # Env / secrets
 .env
 .env.*
-!.env.example
 
 # Claude Code
 .claude/

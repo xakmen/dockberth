@@ -22,8 +22,8 @@ function diagnosticsBlock(d: Diagnostics): string {
   ].join("\n");
 }
 
-/** Works regardless of the telemetry opt-in: nothing is sent anywhere —
- * the user reads the exact block, then it goes into a GitHub issue. */
+/** Nothing is sent anywhere by the app — the user reads the exact block,
+ * then it goes into a GitHub issue they submit themselves. */
 export function ReportBugDialog({
   open,
   onOpenChange,

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { Loader2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,16 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import {
   domainSuffixNote,
   isValidDomainSuffix,
   type Settings,
 } from "@/lib/projects";
 import { version as appVersion } from "../../package.json";
-
-const TELEMETRY_DOC_URL =
-  "https://github.com/xakmen/dockberth/blob/main/docs/TELEMETRY.md";
 
 const FIELD_INPUT =
   "h-[35px] rounded-md border-input bg-input-background text-[13px] shadow-none dark:bg-input-background";
@@ -43,13 +38,11 @@ export function SettingsDialog({
   open,
   onOpenChange,
   settings,
-  onToggleTelemetry,
   onApplyDomainSuffix,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   settings: Settings;
-  onToggleTelemetry: (enabled: boolean) => void;
   onApplyDomainSuffix: (suffix: string) => Promise<void>;
 }) {
   const [choice, setChoice] = useState<SuffixChoice>(
@@ -168,32 +161,6 @@ export function SettingsDialog({
                 </Button>
               </div>
             ) : null}
-          </div>
-
-          <div className="flex items-start justify-between gap-4 rounded-md border border-input px-3.5 py-3">
-            <div className="flex flex-col gap-1">
-              <Label className="text-[12.5px] font-medium text-foreground">
-                Anonymous crash reports
-              </Label>
-              <span className="text-[11.5px] leading-relaxed text-muted-foreground">
-                Paths and project names are scrubbed before sending.{" "}
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    void openUrl(TELEMETRY_DOC_URL);
-                  }}
-                  className="text-primary hover:underline"
-                >
-                  What is sent
-                </a>
-                . Crash reporting for the Rust side applies after a restart.
-              </span>
-            </div>
-            <Switch
-              checked={settings.telemetryEnabled}
-              onCheckedChange={onToggleTelemetry}
-            />
           </div>
         </div>
 

@@ -5,7 +5,6 @@ import { ProjectView, type ProjectAction } from "@/components/ProjectView";
 import { ReportBugDialog } from "@/components/ReportBugDialog";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { Sidebar } from "@/components/Sidebar";
-import { TelemetryDialog } from "@/components/TelemetryDialog";
 import { UpdateBanner } from "@/components/UpdateBanner";
 import { useContextMenuGuard } from "@/hooks/useContextMenuGuard";
 import { useDockerStatus } from "@/hooks/useDockerStatus";
@@ -13,7 +12,6 @@ import { useProjects } from "@/hooks/useProjects";
 import { useUpdater } from "@/hooks/useUpdater";
 import {
   applyDomainSuffix,
-  DEFAULT_DOMAIN_SUFFIX,
   hostsEnsure,
   hostsRepair,
   projectDomain,
@@ -21,14 +19,12 @@ import {
   restartProject,
   setDomainSuffix,
   settingsGet,
-  settingsSet,
   startProject,
   stopProject,
   type ProjectStatus,
   type ProxyStatus,
   type Settings,
 } from "@/lib/projects";
-import { initTelemetry, setTelemetryProjectNames } from "@/lib/telemetry";
 
 const PROXY_HEAL_BACKOFF_MS = 30_000;
 const TRANSITION_TIMEOUT_MS = 30_000;
@@ -64,7 +60,6 @@ function App() {
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [telemetryPrompt, setTelemetryPrompt] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
 
@@ -77,41 +72,14 @@ function App() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  // Telemetry: load the stored choice; first launch shows the one-time
-  // opt-in dialog. Sentry only ever initializes with explicit consent.
   useEffect(() => {
     void settingsGet()
       .then((loaded) => {
         setDomainSuffix(loaded.domainSuffix);
         setSettings(loaded);
-        initTelemetry(loaded.telemetryEnabled);
-        if (!loaded.telemetryPrompted) setTelemetryPrompt(true);
       })
       .catch((err: unknown) => console.error("settings load failed:", err));
   }, []);
-
-  // Project names are anonymized to project-1..n in crash reports.
-  useEffect(() => {
-    setTelemetryProjectNames(projects.map((p) => p.name));
-  }, [projects]);
-
-  const applyTelemetry = useCallback(
-    (enabled: boolean) => {
-      const next: Settings = {
-        domainSuffix: DEFAULT_DOMAIN_SUFFIX,
-        ...(settings ?? {}),
-        telemetryEnabled: enabled,
-        telemetryPrompted: true,
-      };
-      setSettings(next);
-      setTelemetryPrompt(false);
-      initTelemetry(enabled);
-      void settingsSet(next).catch((err: unknown) =>
-        console.error("settings save failed:", err),
-      );
-    },
-    [settings],
-  );
 
   const notify = useCallback((message: string) => {
     setToast(message);
@@ -361,13 +329,11 @@ function App() {
           void pollNow();
         }}
       />
-      <TelemetryDialog open={telemetryPrompt} onChoice={applyTelemetry} />
       {settings ? (
         <SettingsDialog
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
           settings={settings}
-          onToggleTelemetry={applyTelemetry}
           onApplyDomainSuffix={handleApplyDomainSuffix}
         />
       ) : null}

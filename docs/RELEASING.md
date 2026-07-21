@@ -37,7 +37,6 @@ review/edit the notes → **Publish**.
 | --- | --- |
 | `TAURI_SIGNING_PRIVATE_KEY` | Updater artifact signing (private key stays offline with the maintainer) |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Password for the key above |
-| `SENTRY_DSN` | Optional. Baked into builds as both `SENTRY_DSN` (Rust) and `VITE_SENTRY_DSN` (frontend); absent = crash reporting fully disabled (docs/TELEMETRY.md) |
 
 The updater public key lives in `tauri.conf.json` (`plugins.updater.pubkey`).
 Rotating the keypair orphans existing installs (they can't verify new

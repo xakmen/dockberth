@@ -10,7 +10,6 @@ mod proxy;
 mod registry;
 mod scaffold;
 mod settings;
-mod telemetry;
 mod template;
 mod wsl;
 
@@ -18,10 +17,6 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Crash reporting is opt-in and disabled without a build-time DSN;
-    // the guard must outlive the event loop (run() never returns).
-    let _sentry_guard = telemetry::init();
-
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
@@ -57,7 +52,6 @@ pub fn run() {
             wsl::wsl_check_docker,
             settings::settings_get,
             settings::settings_set,
-            telemetry::debug_panic,
             diagnostics::diagnostics_collect,
         ])
         .build(tauri::generate_context!())

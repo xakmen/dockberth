@@ -290,8 +290,6 @@ export const hostsEnsure = (domain: string) =>
 export const hostsRepair = () => invoke<boolean>("hosts_repair");
 
 export interface Settings {
-  telemetryEnabled: boolean;
-  telemetryPrompted: boolean;
   /** Local-domain suffix (`<name>.<suffix>`), no leading dot. Changing it
    * must go through applyDomainSuffix, not settingsSet. */
   domainSuffix: string;

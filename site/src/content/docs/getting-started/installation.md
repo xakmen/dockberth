@@ -8,9 +8,8 @@ sidebar:
 1. Download the installer from the
    [latest release](https://github.com/xakmen/dockberth/releases/latest).
 2. Run it and follow the prompts.
-3. Launch Dockberth. On first start you'll be asked once whether to enable
-   opt-in crash reporting (see [Privacy](/reference/privacy/)) — nothing is
-   sent unless you say yes.
+3. Launch Dockberth — no sign-up, no telemetry
+   (see [Privacy](/reference/privacy/)).
 
 ## SmartScreen
 

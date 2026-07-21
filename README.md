@@ -121,9 +121,9 @@ Deep dive: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Privacy
 
-No telemetry by default. Crash reporting is **opt-in** and heavily scrubbed —
-usernames, project names and paths never leave your machine.
-[docs/TELEMETRY.md](docs/TELEMETRY.md) documents exactly what is sent.
+No telemetry, no crash reporting, no phoning home — Dockberth sends nothing.
+The **Report a bug** action only prefills a GitHub issue that you review and
+submit yourself.
 
 ## Roadmap
 
