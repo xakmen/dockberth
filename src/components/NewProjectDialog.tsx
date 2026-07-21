@@ -104,6 +104,14 @@ export function NewProjectDialog({
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wslCheck, setWslCheck] = useState<WslCheck>({ state: "none" });
+  /** Set once a scaffold has succeeded: if the subsequent createProject
+   * fails, the folder is already on disk, so the primary button retries the
+   * create (register the scaffolded folder) instead of re-scaffolding — which
+   * would fail with "already exists and is not empty". */
+  const [pendingCreate, setPendingCreate] = useState<{
+    path: string;
+    preset: Preset;
+  } | null>(null);
 
   useEffect(() => {
     if (open) void presetList().then(setPresets).catch(() => {});
@@ -133,6 +141,7 @@ export function NewProjectDialog({
     setCreating(false);
     setError(null);
     setWslCheck({ state: "none" });
+    setPendingCreate(null);
   };
 
   const handleOpenChange = (next: boolean) => {
@@ -247,19 +256,28 @@ export function NewProjectDialog({
     !busy && parentPath !== "" && stackPreset?.scaffold != null &&
     isValidProjectName(name) && db !== "none" && locationOk;
 
-  const finishCreate = async (projectPath: string, presetId: string) => {
-    const base = presets.find((p) => p.id === presetId)?.base ?? "php";
+  // `chosen` carries the base directly, so we never fall back to "php" when
+  // the preset list failed to load. Node fields are only sent in existing
+  // mode (where they are shown and validated); new-mode scaffolds use the
+  // preset defaults, which avoids serializing a hidden/stale port as NaN.
+  const finishCreate = async (
+    projectPath: string,
+    chosen: Preset,
+    nodeOverrides?: { startCommand: string; appPort: number },
+  ) => {
+    const base = chosen.base;
     const project = await createProject({
       path: projectPath,
       name,
-      preset: presetId,
+      preset: chosen.id,
       phpVersion: base === "php" ? phpVersion : undefined,
       nodeVersion: base === "node" ? nodeVersion : undefined,
       db: db === "none" ? null : db,
       redis,
-      startCommand: base === "node" ? startCommand.trim() : undefined,
-      appPort: base === "node" ? +appPort : undefined,
+      startCommand: base === "node" ? nodeOverrides?.startCommand : undefined,
+      appPort: base === "node" ? nodeOverrides?.appPort : undefined,
     });
+    setPendingCreate(null);
     reset();
     onCreated(project);
   };
@@ -269,7 +287,24 @@ export function NewProjectDialog({
     setCreating(true);
     setError(null);
     try {
-      await finishCreate(path, preset.id);
+      await finishCreate(path, preset, {
+        startCommand: startCommand.trim(),
+        appPort: +appPort,
+      });
+    } catch (err: unknown) {
+      setError(String(err));
+      setCreating(false);
+    }
+  };
+
+  // Post-scaffold create retry (see pendingCreate): the folder already
+  // exists, so this registers it without downloading the framework again.
+  const retryCreate = async () => {
+    if (!pendingCreate) return;
+    setCreating(true);
+    setError(null);
+    try {
+      await finishCreate(pendingCreate.path, pendingCreate.preset);
     } catch (err: unknown) {
       setError(String(err));
       setCreating(false);
@@ -296,12 +331,13 @@ export function NewProjectDialog({
       } else if (event.type === "done") {
         setScaffold({ state: "idle" });
         setCreating(true);
-        void finishCreate(joinPath(parentPath, name), stackPreset.id).catch(
-          (err: unknown) => {
-            setError(String(err));
-            setCreating(false);
-          },
-        );
+        const scaffoldedPath = joinPath(parentPath, name);
+        // Remember it so a failed create can be retried without re-scaffolding.
+        setPendingCreate({ path: scaffoldedPath, preset: stackPreset });
+        void finishCreate(scaffoldedPath, stackPreset).catch((err: unknown) => {
+          setError(String(err));
+          setCreating(false);
+        });
       } else {
         setScaffold(
           cancelRequested.current
@@ -747,17 +783,27 @@ export function NewProjectDialog({
             </Button>
           )}
           <Button
-            disabled={mode === "existing" ? !canCreateExisting : !canCreateNew}
-            onClick={() =>
-              mode === "existing" ? void createExisting() : createNew()
+            disabled={
+              pendingCreate
+                ? busy
+                : mode === "existing"
+                  ? !canCreateExisting
+                  : !canCreateNew
             }
+            onClick={() => {
+              if (pendingCreate) void retryCreate();
+              else if (mode === "existing") void createExisting();
+              else createNew();
+            }}
             className="h-[34px] rounded-md px-5 text-[12.5px] font-semibold hover:bg-primary-hover"
           >
             {creating
               ? "Creating…"
               : scaffolding
                 ? "Scaffolding…"
-                : "Create project"}
+                : pendingCreate
+                  ? "Retry create"
+                  : "Create project"}
           </Button>
         </DialogFooter>
       </DialogContent>

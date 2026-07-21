@@ -186,6 +186,10 @@ pub fn render_project_compose(
                 format!("/var/www/html/{docroot}")
             };
             let needs_build = php_needs_build(preset, wsl);
+            // The PHP app image serves on a fixed port (nginx :8080), so the
+            // Traefik target must always be the preset's port — a config or
+            // create-time app_port override would only produce Bad Gateway.
+            let php_port = preset.app_port.to_string();
             Ok(render(
                 PHP_TEMPLATE,
                 &[
@@ -193,7 +197,7 @@ pub fn render_project_compose(
                     ("domain", domain),
                     ("php_version", php_version.as_str()),
                     ("webroot", webroot.as_str()),
-                    ("app_port", r.app_port.as_str()),
+                    ("app_port", php_port.as_str()),
                     ("db_image", db_image),
                     ("db_name", r.db_name.as_str()),
                     ("db_user", r.db_user.as_str()),
@@ -442,6 +446,17 @@ mod tests {
         // The default "app" credentials still render fine.
         let ok = config("laravel", Some(Database::Mariadb11), false);
         assert!(render_project_compose(php, &ok, "x.test", false, 0, 0).is_ok());
+    }
+
+    #[test]
+    fn php_ignores_app_port_override() {
+        let php = find_preset("laravel").unwrap();
+        let mut cfg = config("laravel", Some(Database::Mariadb11), false);
+        cfg.app_port = Some(3000);
+        let out = render_project_compose(php, &cfg, "x.test", false, 0, 0).unwrap();
+        // The fixed image port wins; the override never reaches the label.
+        assert!(out.contains("server.port: \"8080\""));
+        assert!(!out.contains("3000"));
     }
 
     #[test]
