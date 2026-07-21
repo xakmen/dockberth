@@ -73,7 +73,7 @@ pub enum LogEvent {
 
 /// Kill a process and its whole tree. taskkill /T is Windows-only, like
 /// this module's callers; the macOS/Linux port will use process groups.
-fn kill_tree(pid: u32) {
+pub(crate) fn kill_tree(pid: u32) {
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
