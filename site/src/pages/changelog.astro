@@ -1,0 +1,21 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { marked } from 'marked';
+
+// Rendered at build time from the repo-root changelog (git-cliff output) —
+// no duplicated content. The ?raw import inlines the file during bundling,
+// so this also works after the page is prerendered from dist/.
+import raw from '../../../CHANGELOG.md?raw';
+// Keep released versions only: cut the preamble and the [Unreleased] section.
+let body = raw.slice(raw.indexOf('## ['));
+body = body.replace(/^## \[Unreleased\][\s\S]*?(?=^## \[)/m, '');
+const html = marked.parse(body);
+---
+
+<StarlightPage frontmatter={{ title: 'Changelog', tableOfContents: false }}>
+	<p>
+		All notable changes to Dockberth, newest first. Generated from the project's
+		<a href="https://github.com/xakmen/dockberth/blob/main/CHANGELOG.md">CHANGELOG.md</a>.
+	</p>
+	<Fragment set:html={html} />
+</StarlightPage>

@@ -5,6 +5,12 @@ with [git-cliff](https://git-cliff.org).
 
 ## [Unreleased]
 
+### Documentation
+
+- real app screenshots — project statuses, logs, scaffolding dialog
+
+## [0.1.2] - 2026-07-19
+
 ### Features
 
 - update sidebar logo to new berth and container glyph
@@ -13,6 +19,7 @@ with [git-cliff](https://git-cliff.org).
 - configurable domain suffix
 - improve layout responsiveness and add min-width to input fields
 - add support for starting Docker Desktop and enhance status reporting
+- update features section with new entries and refactor context menu logic
 
 ### Refactoring
 

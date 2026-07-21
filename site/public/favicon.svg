@@ -1,0 +1,15 @@
+<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dbTile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#144552"/>
+      <stop offset="1" stop-color="#0C2830"/>
+    </linearGradient>
+  </defs>
+  <!-- tile -->
+  <rect width="48" height="48" rx="11" fill="url(#dbTile)"/>
+  <rect x="0.5" y="0.5" width="47" height="47" rx="10.5" fill="none" stroke="#1E5A66" stroke-width="1"/>
+  <!-- berth -->
+  <path d="M13 12v13a11 11 0 0 0 22 0V12" fill="none" stroke="#3FC1D4" stroke-width="4.5" stroke-linecap="round"/>
+  <!-- container -->
+  <rect x="18.5" y="19" width="11" height="11" rx="2.5" fill="#3FC1D4"/>
+</svg>

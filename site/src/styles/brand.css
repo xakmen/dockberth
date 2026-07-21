@@ -1,0 +1,26 @@
+/*
+ * Dockberth brand tokens for the website.
+ * Values mirror the app theme in /src/globals.css — keep them in sync when
+ * the app palette changes. Screenshots and the logo in src/assets/ are
+ * copies of /docs/screenshot*.png and /design/icon/icon.svg.
+ */
+:root {
+	--db-bg: #0a0e13;
+	--db-fg: #e3e9ef;
+	--db-card: #0e131a;
+	--db-primary: #3fc1d4;
+	--db-primary-hover: #5fd0e0;
+	--db-primary-foreground: #04252b;
+	--db-muted: #7d8b99;
+	--db-faint: #55636f;
+	--db-soft: #c6d0d9;
+	--db-border: #1c2530;
+	--db-border-subtle: #1f2833;
+	--db-accent-bg: #0f3038;
+	--db-accent-border: #1e5a66;
+	--db-ok: #46c669;
+	--db-font-sans: 'Inter', system-ui, sans-serif;
+	--db-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+	--db-radius: 8px;
+	--db-radius-lg: 10px;
+}

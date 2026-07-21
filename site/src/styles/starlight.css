@@ -1,0 +1,25 @@
+/* Map Dockberth brand tokens onto Starlight's theme variables (dark-only site). */
+:root {
+	--sl-font: 'Inter';
+	--sl-font-mono: 'JetBrains Mono';
+
+	--sl-color-accent-low: var(--db-accent-bg);
+	--sl-color-accent: #2f8f9f;
+	--sl-color-accent-high: var(--db-primary);
+
+	--sl-color-white: var(--db-fg);
+	--sl-color-gray-1: var(--db-soft);
+	--sl-color-gray-2: #a8b4bf;
+	--sl-color-gray-3: var(--db-muted);
+	--sl-color-gray-4: var(--db-faint);
+	--sl-color-gray-5: #2a3542;
+	--sl-color-gray-6: var(--db-border);
+	--sl-color-black: var(--db-bg);
+
+	--sl-color-bg: var(--db-bg);
+	--sl-color-bg-nav: #0c1117;
+	--sl-color-bg-sidebar: #0c1117;
+	--sl-color-hairline-light: var(--db-border-subtle);
+	--sl-color-hairline: var(--db-border);
+	--sl-color-hairline-shade: #171f29;
+}

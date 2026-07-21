@@ -1,0 +1,6 @@
+{/* Dockberth is dark-only: force the dark theme, skip preference restore. */}
+<script is:inline>
+	document.documentElement.dataset.theme = 'dark';
+	// Stub kept for anything that expects the default provider's global.
+	window.StarlightThemeProvider = { updatePickers() {} };
+</script>

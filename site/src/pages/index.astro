@@ -1,0 +1,551 @@
+---
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/600.css';
+import '../styles/brand.css';
+import { Image } from 'astro:assets';
+import logo from '../assets/icon.svg';
+import screenshot from '../assets/screenshot.png';
+import screenshotLogs from '../assets/screenshot-logs.png';
+import screenshotNewProject from '../assets/screenshot-new-project.png';
+
+const RELEASES = 'https://github.com/xakmen/dockberth/releases/latest';
+const GITHUB = 'https://github.com/xakmen/dockberth';
+
+const description =
+	'Local dev environments on Windows. Pick a preset, press Start, open myapp.test. Docker under the hood — a clean desktop app on top.';
+---
+
+<html lang="en" data-theme="dark">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Dockberth — local dev environments on Windows</title>
+		<meta name="description" content={description} />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="canonical" href="https://dockberth.dev/" />
+		<meta property="og:title" content="Dockberth — local dev environments on Windows" />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content="https://dockberth.dev/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:image" content={new URL(screenshot.src, 'https://dockberth.dev/')} />
+	</head>
+	<body>
+		<header class="nav">
+			<a class="nav-brand" href="/">
+				<Image src={logo} alt="" width="28" height="28" />
+				<span>Dockberth</span>
+			</a>
+			<nav>
+				<a href="/getting-started/">Docs</a>
+				<a href="/changelog/">Changelog</a>
+				<a href={GITHUB}>GitHub</a>
+			</nav>
+		</header>
+
+		<main>
+			<section class="hero">
+				<h1>Local dev environments on&nbsp;Windows</h1>
+				<p class="tagline">
+					Pick a preset, press Start, open <code>myapp.test</code>.<br />
+					Docker under the hood — a clean desktop app on top. No compose files to write,
+					no ports to memorize, no terminal required.
+				</p>
+				<div class="cta">
+					<a class="btn-primary" href={RELEASES}>
+						Download for Windows<span id="dl-version"></span>
+					</a>
+					<a class="btn-secondary" href="/getting-started/">Read the docs</a>
+				</div>
+				<p class="cta-note">Free &amp; open source · MIT · Windows 10/11 · needs Docker Desktop</p>
+				<div class="shot-frame">
+					<Image
+						src={screenshot}
+						alt="Dockberth managing four projects — a running WordPress shop, a partially running Laravel backend and two stopped projects, with stack details and per-service status"
+						loading="eager"
+						widths={[820, 1640]}
+						sizes="(max-width: 900px) 100vw, 880px"
+					/>
+				</div>
+			</section>
+
+			<section class="steps">
+				<h2>Every project, three steps</h2>
+				<div class="steps-grid">
+					<div class="step">
+						<span class="step-num">1</span>
+						<h3>Add a project</h3>
+						<p>
+							Point Dockberth at a folder — or create a new site from scratch — and pick a
+							preset: WordPress, Laravel, Vendure, or generic PHP/Node.
+						</p>
+					</div>
+					<div class="step">
+						<span class="step-num">2</span>
+						<h3>Press Start</h3>
+						<p>
+							Dockberth generates the Docker Compose environment, builds the containers, and
+							wires the project into a shared reverse proxy.
+						</p>
+					</div>
+					<div class="step">
+						<span class="step-num">3</span>
+						<h3>Open <code>myapp.test</code></h3>
+						<p>
+							Every project gets its own local domain — run as many side by side as you like,
+							they never fight over ports.
+						</p>
+					</div>
+				</div>
+			</section>
+
+			<section class="features">
+				<h2>Features</h2>
+				<div class="features-grid">
+					<div class="card">
+						<h3>Preset-driven</h3>
+						<p>
+							One click gives you a complete stack: app container, database, cache, correct
+							PHP/Node version. Adding a new framework is a single JSON file, not a fork of
+							the app.
+						</p>
+					</div>
+					<div class="card">
+						<h3>Create WordPress sites from scratch</h3>
+						<p>
+							Only Docker required — no local PHP or WP-CLI install. Laravel and Vendure
+							scaffolding are next.
+						</p>
+					</div>
+					<div class="card">
+						<h3>Pretty local domains</h3>
+						<p>
+							A shared Traefik proxy on ports 80/443 routes every project as
+							<code>&lt;name&gt;.test</code> (suffix configurable).
+						</p>
+					</div>
+					<div class="card">
+						<h3>Hosts file managed for you</h3>
+						<p>
+							A small elevated helper makes surgical edits inside a clearly marked block; one
+							UAC prompt, nothing else touched.
+						</p>
+					</div>
+					<div class="card">
+						<h3>WSL2-aware</h3>
+						<p>
+							Projects living inside a WSL2 distro run Compose in-distro for native filesystem
+							speed; NTFS projects run natively. The app shows you which is which.
+						</p>
+					</div>
+					<div class="card">
+						<h3>Built-in logs and shell</h3>
+						<p>
+							Follow container logs per project and open a shell into any service straight
+							from the UI.
+						</p>
+					</div>
+					<div class="card">
+						<h3>Non-invasive by design</h3>
+						<p>
+							Everything generated lives in a <code>.dockberth/</code> folder inside your
+							project. Delete it, and Dockberth was never there. Your code is never modified.
+						</p>
+					</div>
+					<div class="card">
+						<h3>Takes care of itself</h3>
+						<p>
+							Docker status at a glance (it can start Docker Desktop for you), proxy
+							self-heal, signed auto-updates.
+						</p>
+					</div>
+				</div>
+				<div class="shots-pair">
+					<figure>
+						<div class="shot-frame">
+							<Image
+								src={screenshotLogs}
+								alt="Logs tab streaming color-coded MariaDB and nginx logs with search and follow-tail"
+								widths={[440, 880]}
+								sizes="(max-width: 900px) 100vw, 430px"
+							/>
+						</div>
+						<figcaption>Live logs, filtered per service</figcaption>
+					</figure>
+					<figure>
+						<div class="shot-frame">
+							<Image
+								src={screenshotNewProject}
+								alt="New project dialog — pick a stack, PHP version and database, get a scaffolded site"
+								widths={[440, 880]}
+								sizes="(max-width: 900px) 100vw, 430px"
+							/>
+						</div>
+						<figcaption>A new site in one dialog</figcaption>
+					</figure>
+				</div>
+			</section>
+
+			<section class="stacks">
+				<h2>Supported stacks</h2>
+				<table>
+					<thead>
+						<tr>
+							<th>Stack</th>
+							<th>Run existing project</th>
+							<th>Create from scratch</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr><td>WordPress</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+						<tr><td>Laravel</td><td class="ok">✓</td><td class="dim">planned</td></tr>
+						<tr><td>Vendure</td><td class="ok">✓</td><td class="dim">planned</td></tr>
+						<tr><td>PHP (generic)</td><td class="ok">✓</td><td class="dim">—</td></tr>
+						<tr><td>Node.js (generic)</td><td class="ok">✓</td><td class="dim">—</td></tr>
+					</tbody>
+				</table>
+				<p class="stacks-note">
+					On the roadmap: Yii, CodeIgniter, OpenCart, Drupal — each is just a preset file.
+					<a href={`${GITHUB}/blob/main/docs/PRESETS.md`}>Contribute one</a>.
+				</p>
+			</section>
+
+			<section class="privacy">
+				<h2>Privacy</h2>
+				<p>
+					No telemetry by default. Crash reporting is <strong>opt-in</strong> and heavily
+					scrubbed — usernames, project names and paths never leave your machine.
+					<a href="/reference/privacy/">Exactly what is sent</a>.
+				</p>
+			</section>
+		</main>
+
+		<footer>
+			<div class="footer-inner">
+				<span>© 2026 Dockberth · MIT license · made for Windows</span>
+				<nav>
+					<a href="/getting-started/">Docs</a>
+					<a href="/changelog/">Changelog</a>
+					<a href={GITHUB}>GitHub</a>
+					<a href={`${GITHUB}/blob/main/LICENSE`}>License</a>
+				</nav>
+			</div>
+		</footer>
+
+		<script is:inline>
+			fetch('https://api.github.com/repos/xakmen/dockberth/releases/latest')
+				.then((r) => (r.ok ? r.json() : Promise.reject()))
+				.then((d) => {
+					const el = document.getElementById('dl-version');
+					if (el && d.tag_name) el.textContent = ' · v' + d.tag_name.replace(/^v/, '');
+				})
+				.catch(() => {});
+		</script>
+	</body>
+</html>
+
+<style>
+	* {
+		box-sizing: border-box;
+	}
+	html {
+		color-scheme: dark;
+		background: var(--db-bg);
+	}
+	body {
+		margin: 0;
+		font-family: var(--db-font-sans);
+		font-size: 16px;
+		line-height: 1.6;
+		color: var(--db-fg);
+		background: var(--db-bg);
+		-webkit-font-smoothing: antialiased;
+	}
+	code {
+		font-family: var(--db-font-mono);
+		font-size: 0.9em;
+		color: var(--db-primary);
+		background: var(--db-accent-bg);
+		border: 1px solid var(--db-accent-border);
+		border-radius: 4px;
+		padding: 0.1em 0.35em;
+	}
+	a {
+		color: var(--db-primary);
+		text-decoration: none;
+	}
+	a:hover {
+		color: var(--db-primary-hover);
+	}
+	h1,
+	h2,
+	h3 {
+		line-height: 1.2;
+		margin: 0 0 0.6em;
+	}
+	h2 {
+		font-size: 1.7rem;
+		text-align: center;
+		margin-bottom: 1.6em;
+	}
+	section {
+		max-width: 1080px;
+		margin: 0 auto;
+		padding: 4.5rem 1.5rem 0;
+	}
+
+	/* Nav */
+	.nav {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		max-width: 1080px;
+		margin: 0 auto;
+		padding: 1rem 1.5rem;
+	}
+	.nav-brand {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		font-weight: 600;
+		font-size: 1.05rem;
+		color: var(--db-fg);
+	}
+	.nav nav {
+		display: flex;
+		gap: 1.5rem;
+	}
+	.nav nav a {
+		color: var(--db-soft);
+		font-size: 0.95rem;
+	}
+	.nav nav a:hover {
+		color: var(--db-fg);
+	}
+
+	/* Hero */
+	.hero {
+		text-align: center;
+		padding-top: 4rem;
+	}
+	.hero h1 {
+		font-size: clamp(2.1rem, 5vw, 3.2rem);
+		font-weight: 700;
+		letter-spacing: -0.02em;
+	}
+	.tagline {
+		font-size: 1.15rem;
+		color: var(--db-muted);
+		max-width: 42rem;
+		margin: 0 auto 2rem;
+	}
+	.cta {
+		display: flex;
+		gap: 0.9rem;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+	.btn-primary,
+	.btn-secondary {
+		display: inline-block;
+		padding: 0.7rem 1.4rem;
+		border-radius: var(--db-radius);
+		font-weight: 600;
+		font-size: 1rem;
+	}
+	.btn-primary {
+		background: var(--db-primary);
+		color: var(--db-primary-foreground);
+	}
+	.btn-primary:hover {
+		background: var(--db-primary-hover);
+		color: var(--db-primary-foreground);
+	}
+	.btn-secondary {
+		border: 1px solid var(--db-border);
+		color: var(--db-soft);
+		background: var(--db-card);
+	}
+	.btn-secondary:hover {
+		border-color: var(--db-accent-border);
+		color: var(--db-fg);
+	}
+	.cta-note {
+		color: var(--db-faint);
+		font-size: 0.85rem;
+		margin-top: 1rem;
+	}
+	.shot-frame {
+		margin-top: 2.5rem;
+		border: 1px solid var(--db-border);
+		border-radius: var(--db-radius-lg);
+		overflow: hidden;
+		background: var(--db-card);
+		box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.7);
+	}
+	.shot-frame img {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+
+	/* Steps */
+	.steps-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 1.2rem;
+	}
+	.step {
+		background: var(--db-card);
+		border: 1px solid var(--db-border);
+		border-radius: var(--db-radius-lg);
+		padding: 1.5rem;
+	}
+	.step-num {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.8rem;
+		height: 1.8rem;
+		border-radius: 50%;
+		background: var(--db-accent-bg);
+		border: 1px solid var(--db-accent-border);
+		color: var(--db-primary);
+		font-weight: 600;
+		font-size: 0.9rem;
+		margin-bottom: 0.9rem;
+	}
+	.step h3 {
+		font-size: 1.05rem;
+	}
+	.step p {
+		color: var(--db-muted);
+		font-size: 0.95rem;
+		margin: 0;
+	}
+
+	/* Features */
+	.features-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+		gap: 1.2rem;
+	}
+	.card {
+		background: var(--db-card);
+		border: 1px solid var(--db-border);
+		border-radius: var(--db-radius-lg);
+		padding: 1.4rem;
+	}
+	.card h3 {
+		font-size: 1rem;
+		color: var(--db-fg);
+	}
+	.card p {
+		color: var(--db-muted);
+		font-size: 0.92rem;
+		margin: 0;
+	}
+	.shots-pair {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 1.5rem;
+		margin-top: 2.5rem;
+	}
+	.shots-pair figure {
+		margin: 0;
+	}
+	.shots-pair .shot-frame {
+		margin-top: 0;
+	}
+	.shots-pair figcaption {
+		text-align: center;
+		color: var(--db-muted);
+		font-size: 0.9rem;
+		margin-top: 0.7rem;
+	}
+
+	/* Stacks */
+	.stacks table {
+		width: 100%;
+		max-width: 640px;
+		margin: 0 auto;
+		border-collapse: collapse;
+		background: var(--db-card);
+		border: 1px solid var(--db-border);
+		border-radius: var(--db-radius-lg);
+		overflow: hidden;
+	}
+	.stacks th,
+	.stacks td {
+		padding: 0.7rem 1.1rem;
+		border-bottom: 1px solid var(--db-border);
+		text-align: left;
+	}
+	.stacks th:not(:first-child),
+	.stacks td:not(:first-child) {
+		text-align: center;
+	}
+	.stacks th {
+		color: var(--db-faint);
+		font-size: 0.78rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+	}
+	.stacks tr:last-child td {
+		border-bottom: none;
+	}
+	.stacks .ok {
+		color: var(--db-ok);
+		font-weight: 600;
+	}
+	.stacks .dim {
+		color: var(--db-faint);
+	}
+	.stacks-note {
+		text-align: center;
+		color: var(--db-muted);
+		font-size: 0.92rem;
+		margin-top: 1.2rem;
+	}
+
+	/* Privacy */
+	.privacy {
+		text-align: center;
+		max-width: 46rem;
+	}
+	.privacy p {
+		color: var(--db-muted);
+	}
+
+	/* Footer */
+	footer {
+		margin-top: 5rem;
+		border-top: 1px solid var(--db-border);
+	}
+	.footer-inner {
+		max-width: 1080px;
+		margin: 0 auto;
+		padding: 1.6rem 1.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-wrap: wrap;
+		color: var(--db-faint);
+		font-size: 0.88rem;
+	}
+	.footer-inner nav {
+		display: flex;
+		gap: 1.2rem;
+	}
+	.footer-inner a {
+		color: var(--db-muted);
+	}
+	.footer-inner a:hover {
+		color: var(--db-fg);
+	}
+</style>
