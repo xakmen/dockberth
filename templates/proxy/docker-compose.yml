@@ -1,9 +1,10 @@
 # Dockberth global proxy — Traefik v3.
-# One instance per machine. Owns host ports 80/443 and routes
-# <name>.<suffix> domains (suffix from app settings, default "test")
-# to project containers discovered via Docker labels on the external
-# "dockberth" network. Deployed by the app into its data directory and
-# started with `docker compose up -d` (see src-tauri/src/proxy.rs).
+# One instance per machine. Owns host port 80 (bound to loopback) and
+# routes <name>.<suffix> domains (suffix from app settings, default
+# "test") to project containers discovered via Docker labels on the
+# external "dockberth" network. Deployed by the app into its data
+# directory and started with `docker compose up -d` (see
+# src-tauri/src/proxy.rs).
 
 name: dockberth-proxy
 
@@ -19,10 +20,11 @@ services:
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=dockberth
       - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
     ports:
-      - "80:80"
-      - "443:443"
+      # Bound to loopback: `.test` domains resolve to 127.0.0.1 via the
+      # hosts file, so nothing is lost, and dev sites are not exposed to
+      # the LAN. 443 is intentionally not published until TLS ships.
+      - "127.0.0.1:80:80"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
