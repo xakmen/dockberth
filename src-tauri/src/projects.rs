@@ -502,6 +502,12 @@ pub fn project_open_folder(app: AppHandle, name: String) -> Result<(), String> {
 
 /// Open the project in VS Code. WSL projects use the Remote-WSL target
 /// (native-speed editing); falls back to opening the UNC path directly.
+///
+/// Invokes `code.cmd` directly rather than `cmd /C code <path>`: routing
+/// through cmd.exe let cmd re-parse the path and honor metacharacters
+/// (`&`, `|`, `^`), so a space-free folder name like `shop&calc` ran an
+/// arbitrary extra command. Passing the path as a single argument to the
+/// launcher removes the shell entirely.
 #[tauri::command]
 pub async fn project_open_editor(app: AppHandle, name: String) -> Result<(), String> {
     let entry = find_entry(&app, &name)?;
@@ -511,8 +517,8 @@ pub async fn project_open_editor(app: AppHandle, name: String) -> Result<(), Str
     if let Location::Wsl { distro, linux_path } = effective_location(&entry, config.as_ref()) {
         let remote = format!("wsl+{distro}");
         let output = shell
-            .command("cmd")
-            .args(["/C", "code", "--remote", &remote, &linux_path])
+            .command("code.cmd")
+            .args(["--remote", &remote, &linux_path])
             .output()
             .await
             .map_err(|e| format!("cannot run VS Code CLI: {e}"))?;
@@ -522,8 +528,8 @@ pub async fn project_open_editor(app: AppHandle, name: String) -> Result<(), Str
     }
 
     let output = shell
-        .command("cmd")
-        .args(["/C", "code", &entry.path])
+        .command("code.cmd")
+        .args([entry.path.as_str()])
         .output()
         .await
         .map_err(|e| format!("cannot run VS Code CLI: {e}"))?;
