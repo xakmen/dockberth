@@ -34,6 +34,15 @@ pub fn is_valid_project_name(name: &str) -> bool {
         && !name.ends_with('-')
 }
 
+/// `true` for names Dockberth reserves for its own compose projects: the
+/// global proxy renders as `dockberth-proxy`, so a project named `proxy`
+/// (project `dockberth-proxy`) would share that compose project and could
+/// take Traefik down. Anything under the `dockberth` prefix is reserved
+/// too, keeping the `dockberth-*` namespace ours (scaffold, future stacks).
+pub fn is_reserved_project_name(name: &str) -> bool {
+    name == "proxy" || name.starts_with("dockberth")
+}
+
 /// php-fpm s6 run script mounted over the image's one for NTFS projects:
 /// identical to upstream plus --allow-to-run-as-root (see the php base).
 pub const FPM_ROOT_RUN: &str = "#!/command/execlineb -P\nwith-contenv\ns6-notifyoncheck -d\n/usr/local/sbin/php-fpm --nodaemonize --allow-to-run-as-root\n";
@@ -339,6 +348,19 @@ mod tests {
         assert!(!out.contains("db-data"));
         assert!(!out.contains("user:"));
         assert!(!out.contains("#[section"));
+    }
+
+    #[test]
+    fn reserves_dockberth_owned_names() {
+        assert!(is_reserved_project_name("proxy"));
+        assert!(is_reserved_project_name("dockberth"));
+        assert!(is_reserved_project_name("dockberth-proxy"));
+        assert!(is_reserved_project_name("dockberthx"));
+        // Legitimate project names are not reserved.
+        assert!(!is_reserved_project_name("shop"));
+        assert!(!is_reserved_project_name("my-proxy"));
+        assert!(!is_reserved_project_name("proxied"));
+        assert!(!is_reserved_project_name("berth"));
     }
 
     #[test]
