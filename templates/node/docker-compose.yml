@@ -9,7 +9,10 @@ name: dockberth-{project}
 services:
   app:
     image: node:{node_version}-bookworm-slim
-    restart: unless-stopped
+    # Dockberth is the lifecycle manager, so project services must not come
+    # back on their own when Docker Desktop restarts — otherwise every
+    # project that was up at shutdown auto-starts at once (memory pressure).
+    restart: "no"
     working_dir: /app
     command: ["sh", "-lc", "{start_command}"]
     environment:
@@ -43,7 +46,7 @@ services:
 
   db:
     image: {db_image}
-    restart: unless-stopped
+    restart: "no"
 #[section:db_mysql]
     environment:
       MYSQL_DATABASE: {db_name}
@@ -68,7 +71,7 @@ services:
 #[section:redis]
   redis:
     image: redis:7-alpine
-    restart: unless-stopped
+    restart: "no"
     networks:
       - default
 #[/section]
