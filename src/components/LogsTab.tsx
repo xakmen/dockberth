@@ -101,6 +101,7 @@ export function LogsTab({
   const [streaming, setStreaming] = useState(false);
   const buffer = useRef<LogLine[]>([]);
   const nextId = useRef(0);
+  const lastFlushedId = useRef(-1);
   const scrollRef = useRef<HTMLDivElement>(null);
   const followRef = useRef(follow);
   followRef.current = follow;
@@ -138,10 +139,13 @@ export function LogsTab({
       channel,
     ).catch(() => setStreaming(false));
 
+    // Flush on a monotonic id, not on length: once the ring buffer is
+    // saturated its length is pinned at BUFFER_LIMIT, so a length compare
+    // would report "unchanged" forever and freeze the view.
     const flush = setInterval(() => {
-      setLines((prev) =>
-        prev.length === buffer.current.length ? prev : [...buffer.current],
-      );
+      if (lastFlushedId.current === nextId.current) return;
+      lastFlushedId.current = nextId.current;
+      setLines([...buffer.current]);
     }, FLUSH_INTERVAL_MS);
 
     return () => {
