@@ -47,7 +47,7 @@ pub(crate) fn save(settings: Settings) -> Result<(), String> {
     }
     let raw = serde_json::to_string_pretty(&settings)
         .map_err(|e| format!("cannot serialize settings: {e}"))?;
-    std::fs::write(&path, raw).map_err(|e| format!("cannot write settings: {e}"))
+    crate::atomic::write(&path, raw).map_err(|e| format!("cannot write settings: {e}"))
 }
 
 #[tauri::command]

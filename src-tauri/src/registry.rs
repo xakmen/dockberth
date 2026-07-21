@@ -164,7 +164,7 @@ pub fn save_entries(app: &AppHandle, projects: Vec<RegistryEntry>) -> Result<(),
     let path = registry_path(app)?;
     let raw = serde_json::to_string_pretty(&RegistryFile { projects })
         .map_err(|e| format!("cannot serialize registry: {e}"))?;
-    fs::write(&path, raw).map_err(|e| format!("cannot write registry: {e}"))
+    crate::atomic::write(&path, raw).map_err(|e| format!("cannot write registry: {e}"))
 }
 
 pub fn now_millis() -> u64 {
