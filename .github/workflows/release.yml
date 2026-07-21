@@ -37,10 +37,13 @@ jobs:
         id: notes
         shell: bash
         run: |
+          # Random delimiter so a commit message line can't close the
+          # heredoc early and inject step outputs into $GITHUB_OUTPUT.
+          delim="NOTES_EOF_$(openssl rand -hex 16)"
           {
-            echo "body<<NOTES_EOF"
+            echo "body<<${delim}"
             npx git-cliff --latest --strip header
-            echo "NOTES_EOF"
+            echo "${delim}"
           } >> "$GITHUB_OUTPUT"
 
       - uses: tauri-apps/tauri-action@v0

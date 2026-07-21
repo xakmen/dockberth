@@ -8,10 +8,14 @@
     "dialog:default",
     "updater:default",
     "process:allow-restart",
-    "opener:default",
     {
       "identifier": "opener:allow-open-url",
-      "allow": [{ "url": "http://*" }, { "url": "http://*/*" }]
+      "allow": [
+        { "url": "http://*" },
+        { "url": "http://*/*" },
+        { "url": "https://github.com/*" },
+        { "url": "https://www.docker.com/*" }
+      ]
     }
   ]
 }
