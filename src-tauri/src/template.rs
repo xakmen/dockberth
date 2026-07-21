@@ -43,6 +43,16 @@ pub fn is_reserved_project_name(name: &str) -> bool {
     name == "proxy" || name.starts_with("dockberth")
 }
 
+/// Escape `$` as `$$` so docker-compose's `${VAR}` / `$VAR` interpolation
+/// treats the value literally (compose un-escapes `$$` back to a single
+/// `$`). Applied to user-controlled scalars rendered into the compose
+/// file; without it a start command like `PORT=$PORT npm run dev` had
+/// `$PORT` substituted from the host environment (usually empty) before
+/// the container ever saw it.
+fn escape_compose_dollar(value: &str) -> String {
+    value.replace('$', "$$")
+}
+
 /// php-fpm s6 run script mounted over the image's one for NTFS projects:
 /// identical to upstream plus --allow-to-run-as-root (see the php base).
 pub const FPM_ROOT_RUN: &str = "#!/command/execlineb -P\nwith-contenv\ns6-notifyoncheck -d\n/usr/local/sbin/php-fpm --nodaemonize --allow-to-run-as-root\n";
@@ -94,9 +104,13 @@ fn resolve_common(config: &ProjectConfig, preset: &Preset, uid: u32, gid: u32) -
     Resolved {
         app_port: config.app_port.unwrap_or(preset.app_port).to_string(),
         db: config.db,
-        db_name: config.db_name.clone().unwrap_or(DEFAULT_DB_NAME.into()),
-        db_user: config.db_user.clone().unwrap_or(DEFAULT_DB_NAME.into()),
-        db_password: config.db_password.clone().unwrap_or(DEFAULT_DB_NAME.into()),
+        // Escaped so a `$` in a (hand-edited) credential is passed to the
+        // container literally instead of being interpolated by compose.
+        db_name: escape_compose_dollar(&config.db_name.clone().unwrap_or(DEFAULT_DB_NAME.into())),
+        db_user: escape_compose_dollar(&config.db_user.clone().unwrap_or(DEFAULT_DB_NAME.into())),
+        db_password: escape_compose_dollar(
+            &config.db_password.clone().unwrap_or(DEFAULT_DB_NAME.into()),
+        ),
         uid: uid.to_string(),
         gid: gid.to_string(),
     }
@@ -191,6 +205,7 @@ pub fn render_project_compose(
             if start_command.contains('"') || start_command.contains('\\') {
                 return Err("start command must not contain quotes or backslashes".into());
             }
+            let start_command = escape_compose_dollar(&start_command);
             Ok(render(
                 NODE_TEMPLATE,
                 &[
@@ -381,6 +396,20 @@ mod tests {
         let mut bad_cmd = config("node-generic", None, false);
         bad_cmd.start_command = Some("echo \"hi\"".into());
         assert!(render_project_compose(node, &bad_cmd, "x.test", false, 0, 0).is_err());
+    }
+
+    #[test]
+    fn escapes_dollar_in_start_command_and_db_password() {
+        let node = find_preset("node-generic").unwrap();
+        let mut cfg = config("node-generic", Some(Database::Mysql84), false);
+        cfg.start_command = Some("PORT=$PORT npm run dev".into());
+        cfg.db_password = Some("p$ss$word".into());
+        let out = render_project_compose(node, &cfg, "x.test", false, 0, 0).unwrap();
+        // `$` is doubled so compose passes a literal `$` to the container.
+        assert!(out.contains("PORT=$$PORT npm run dev"));
+        assert!(out.contains("p$$ss$$word"));
+        // No lone `$` (single, not part of a `$$` pair) survives.
+        assert!(!out.replace("$$", "").contains('$'));
     }
 
     #[test]
