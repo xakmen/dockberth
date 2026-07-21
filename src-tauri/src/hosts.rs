@@ -71,9 +71,28 @@ pub fn domain_present(domain: &str) -> Result<bool, String> {
     Ok(content_has_domain(&contents, domain))
 }
 
+/// The hosts file is treated as opaque bytes through a lossless Latin-1
+/// bijection: each byte maps to the codepoint of the same value. This lets
+/// us find and replace the ASCII managed block while preserving any
+/// non-UTF-8 user content (e.g. CP1251 Cyrillic comments) byte-for-byte on
+/// write. Reading as UTF-8 previously hard-failed on the first non-UTF-8
+/// byte, which bricked every hosts feature (and made "repair" unable to
+/// repair). Latin-1 decode + encode round-trips the exact original bytes
+/// regardless of the file's real encoding.
+fn decode_latin1(bytes: &[u8]) -> String {
+    bytes.iter().map(|&b| b as char).collect()
+}
+
+/// Inverse of [`decode_latin1`]. Every char in rendered hosts content is
+/// <= U+00FF (Latin-1-decoded input plus the ASCII markers/entries we
+/// generate), so the `as u8` truncation never loses data.
+fn encode_latin1(s: &str) -> Vec<u8> {
+    s.chars().map(|c| c as u8).collect()
+}
+
 fn read_hosts() -> Result<String, String> {
-    match std::fs::read_to_string(HOSTS_PATH) {
-        Ok(raw) => Ok(raw),
+    match std::fs::read(HOSTS_PATH) {
+        Ok(bytes) => Ok(decode_latin1(&bytes)),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(String::new()),
         Err(e) => Err(format!("cannot read hosts file: {e}")),
     }
@@ -333,8 +352,10 @@ async fn sync_to(app: &AppHandle, desired: Vec<String>) -> Result<String, String
         return Ok(render.content); // identical — no write, no UAC
     }
 
-    let content_b64 =
-        base64::Engine::encode(&base64::engine::general_purpose::STANDARD, render.content.as_bytes());
+    let content_b64 = base64::Engine::encode(
+        &base64::engine::general_purpose::STANDARD,
+        encode_latin1(&render.content),
+    );
     let script = format!(
         "$b=[Convert]::FromBase64String('{content_b64}')\n\
          Copy-Item -Path '{HOSTS_PATH}' -Destination '{BACKUP_PATH}' -Force -ErrorAction SilentlyContinue\n\
@@ -390,6 +411,29 @@ mod tests {
 
     fn names(list: &[&str]) -> Vec<String> {
         list.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn latin1_roundtrips_arbitrary_bytes() {
+        // Every byte value, incl. sequences that are invalid UTF-8 (a lone
+        // 0xE9 CP1251 "щ", 0xFF, an unpaired UTF-16 surrogate byte).
+        let bytes: Vec<u8> = (0u8..=255).collect();
+        assert_eq!(encode_latin1(&decode_latin1(&bytes)), bytes);
+        let cp1251 = b"# \xEF\xF0\xE8\xE2\xB3\xF2 comment\r\n"; // not valid UTF-8
+        assert_eq!(encode_latin1(&decode_latin1(cp1251)), cp1251);
+    }
+
+    #[test]
+    fn preserves_non_utf8_user_comment_byte_for_byte() {
+        // A hosts file whose comment is CP1251-encoded (not UTF-8); reading
+        // it via decode_latin1 must not corrupt those bytes when the block
+        // is written back.
+        let raw = decode_latin1(b"# \xEF\xF0\xE8\xE2\xB3\xF2\r\n127.0.0.1 localhost\r\n");
+        let out = render_hosts(&raw, &names(&["app.test"]), &names(&["app"]), &sfx()).unwrap();
+        assert!(out.changed);
+        // The foreign comment survives as the exact original bytes.
+        assert!(encode_latin1(&out.content).starts_with(b"# \xEF\xF0\xE8\xE2\xB3\xF2\r\n"));
+        assert!(out.content.contains("127.0.0.1 app.test"));
     }
 
     /// Stray-suffix set for the default configuration (suffix = "test").
