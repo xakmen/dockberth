@@ -26,6 +26,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .manage(logs::LogSessions::default())
         .manage(registry::RegistryLock::default())
+        .manage(scaffold::ScaffoldSessions::default())
         .invoke_handler(tauri::generate_handler![
             docker::docker_version,
             docker::docker_start,
@@ -59,10 +60,11 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app_handle, event| {
-            // Log followers are external processes — Windows does not kill
-            // child trees on exit, so clean them up explicitly.
+            // Log followers and scaffold runs are external processes —
+            // Windows does not kill child trees on exit, so reap them here.
             if let tauri::RunEvent::Exit = event {
                 logs::kill_all(&app_handle.state::<logs::LogSessions>());
+                scaffold::kill_all(&app_handle.state::<scaffold::ScaffoldSessions>());
             }
         });
 }

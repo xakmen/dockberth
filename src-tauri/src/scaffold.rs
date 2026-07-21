@@ -7,11 +7,13 @@
 //! wrote is removed — a folder we created is deleted entirely, a
 //! pre-existing (empty) folder is emptied. Nothing else is ever touched.
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 use serde::Serialize;
 use tauri::ipc::Channel;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager, State};
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
@@ -19,6 +21,22 @@ use crate::preset::{self, ScaffoldSpec};
 use crate::registry::{derive_location, Location};
 use crate::template::is_valid_project_name;
 use crate::wsl;
+
+/// project name → PID of the running `docker run` scaffold client, so a
+/// cancel can kill the process tree even before the container exists (a
+/// stalled image pull). Without this, cancel only ran `docker rm` on a
+/// not-yet-created container — a no-op — and the hung run stranded the
+/// half-created target folder.
+#[derive(Default)]
+pub struct ScaffoldSessions(Mutex<HashMap<String, u32>>);
+
+/// Kill any still-running scaffold `docker run` clients (called on app exit).
+pub fn kill_all(sessions: &ScaffoldSessions) {
+    let pids: Vec<u32> = sessions.0.lock().unwrap().drain().map(|(_, pid)| pid).collect();
+    for pid in pids {
+        crate::logs::kill_tree(pid);
+    }
+}
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase", tag = "type")]
@@ -155,6 +173,7 @@ fn looks_like_pull(line: &str) -> bool {
 #[tauri::command]
 pub async fn scaffold_project(
     app: AppHandle,
+    sessions: State<'_, ScaffoldSessions>,
     parent_path: String,
     name: String,
     preset: String,
@@ -182,14 +201,17 @@ pub async fn scaffold_project(
         .args(&args)
         .spawn()
         .map_err(|e| format!("cannot start scaffold container: {e}"));
-    let (mut rx, _child) = match spawned {
+    let (mut rx, child) = match spawned {
         Ok(pair) => pair,
         Err(e) => {
             cleanup_target(&target, created_by_us);
             return Err(e);
         }
     };
+    sessions.0.lock().unwrap().insert(name.clone(), child.pid());
 
+    let app_task = app.clone();
+    let name_task = name.clone();
     tauri::async_runtime::spawn(async move {
         let mut tail: Vec<String> = Vec::new();
         let mut code: Option<i32> = None;
@@ -220,6 +242,14 @@ pub async fn scaffold_project(
                 _ => {}
             }
         }
+        // The run finished (or was killed by cancel) — drop the session so
+        // a later cancel can't act on a dead/reused PID.
+        app_task
+            .state::<ScaffoldSessions>()
+            .0
+            .lock()
+            .unwrap()
+            .remove(&name_task);
         if code == Some(0) {
             let _ = channel.send(ScaffoldEvent::Done);
         } else {
@@ -241,11 +271,18 @@ pub async fn scaffold_project(
 #[tauri::command]
 pub async fn scaffold_cancel(
     app: AppHandle,
+    sessions: State<'_, ScaffoldSessions>,
     name: String,
     parent_path: String,
 ) -> Result<(), String> {
     if !is_valid_project_name(&name) {
         return Err(format!("invalid project name '{name}'"));
+    }
+    // Kill the `docker run` client itself: this aborts a run that is still
+    // pulling (no container yet), and its non-zero exit makes the runner
+    // task clean up the target folder. `docker rm` alone was a no-op then.
+    if let Some(pid) = sessions.0.lock().unwrap().remove(&name) {
+        crate::logs::kill_tree(pid);
     }
     let target = Path::new(&parent_path).join(&name);
     let container = container_name(&name);
