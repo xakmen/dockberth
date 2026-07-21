@@ -23,8 +23,14 @@ export function useUpdater(): UseUpdaterResult {
   const updateRef = useRef<Update | null>(null);
   const [status, setStatus] = useState<UpdateStatus>({ state: "idle" });
   const [checking, setChecking] = useState(false);
+  // checkNow is a stable callback; read the live status through a ref.
+  const statusRef = useRef(status);
+  statusRef.current = status;
 
   const checkNow = useCallback(async (): Promise<boolean> => {
+    // A re-check mid-download must not flip the banner back to "available"
+    // and let a second downloadAndInstall start on the same Update.
+    if (statusRef.current.state === "downloading") return true;
     setChecking(true);
     try {
       const update = await check();

@@ -264,19 +264,27 @@ function App() {
   // the existing Repair/Fix hosts paths recover from that.
   const handleApplyDomainSuffix = useCallback(
     async (suffix: string) => {
-      const result = await applyDomainSuffix(suffix);
-      setDomainSuffix(suffix);
-      setSettings((prev) => (prev ? { ...prev, domainSuffix: suffix } : prev));
-      await refresh();
-      void pollNow();
-      if (!result.hostsSynced) {
-        notify(
-          "Hosts update was declined — use “Repair hosts entries” to finish",
-        );
-      } else if (result.errors.length > 0) {
-        notify(`Suffix changed, with issues: ${result.errors[0]}`);
-      } else {
-        notify(`Domain suffix changed to .${suffix}`);
+      try {
+        const result = await applyDomainSuffix(suffix);
+        setDomainSuffix(suffix);
+        setSettings((prev) => (prev ? { ...prev, domainSuffix: suffix } : prev));
+        await refresh();
+        void pollNow();
+        if (!result.hostsSynced) {
+          notify(
+            "Hosts update was declined — use “Repair hosts entries” to finish",
+          );
+        } else if (result.errors.length > 0) {
+          notify(`Suffix changed, with issues: ${result.errors[0]}`);
+        } else {
+          notify(`Domain suffix changed to .${suffix}`);
+        }
+      } catch (err: unknown) {
+        // Without this the rejection was unhandled: the confirm dialog just
+        // stopped its spinner with no message. Surface it and re-throw so
+        // the dialog keeps itself open for a retry.
+        notify(`Couldn't change domain suffix: ${String(err)}`);
+        throw err;
       }
     },
     [refresh, pollNow, notify],
@@ -350,6 +358,7 @@ function App() {
             void refresh();
             void pollNow();
           }}
+          notify={notify}
         />
       ) : (
         <EmptyState onNewProject={() => setWizardOpen(true)} />
