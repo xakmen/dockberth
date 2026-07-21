@@ -3,8 +3,8 @@
 .env.*
 !.env.example
 
-# Claude Code local settings
-.claude/settings.local.json
+# Claude Code
+.claude/
 
 # Node
 node_modules
@@ -27,8 +27,7 @@ src-tauri/gen/schemas
 .dockberth/
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
+.vscode/
 .idea
 .DS_Store
 *.suo
