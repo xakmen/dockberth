@@ -100,7 +100,7 @@ export function ProxyStatusRow({
         <span className="size-1.5 shrink-0 rounded-full bg-status-running" />
         Proxy running
         <span className="flex-1" />
-        <span className="font-mono text-[10px] text-faint">:80 :443</span>
+        <span className="font-mono text-[10px] text-faint">127.0.0.1:80</span>
       </div>
     );
   }
