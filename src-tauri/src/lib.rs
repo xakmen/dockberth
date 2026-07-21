@@ -25,6 +25,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .manage(logs::LogSessions::default())
+        .manage(registry::RegistryLock::default())
         .invoke_handler(tauri::generate_handler![
             docker::docker_version,
             docker::docker_start,
