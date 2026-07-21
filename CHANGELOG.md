@@ -3,11 +3,35 @@
 All notable changes to Dockberth. Generated from conventional commits
 with [git-cliff](https://git-cliff.org).
 
-## [Unreleased]
+## [0.1.3] - 2026-07-21
+
+### Features
+
+- dockberth.dev website — landing, docs, changelog, Pages deploy
+- **BREAKING:** remove Sentry crash reporting entirely
+
+### Fixes
+
+- keep the Logs view updating after the buffer fills (#31)
+- reserve the proxy/dockberth project namespace (#32)
+- read the hosts file as bytes so non-UTF-8 comments don't break it (#33)
+- escape $ in rendered compose values so start commands survive (#34)
+- do not auto-start project services with Docker (#35)
+- bind the proxy to loopback and drop the unused 443 publish (#36)
+- launch VS Code without cmd /C to prevent argument injection (#37)
+- write persisted files atomically (temp + rename) (#38)
+- serialize registry mutations to prevent lost project entries (#39)
+- own the log-follower lifecycle to prevent PID-reuse kills and leaks (#40)
+- validate compose credentials, service args and non-ASCII names (#41)
+- make scaffold cancel actually abort a hung run (#42)
+- make proxy heal and status timeouts fire without a live poll (#43)
+- surface silent frontend failures and guard the updater (#44)
+- correct new-project wizard base, port and scaffold recovery (#45)
 
 ### Documentation
 
 - real app screenshots — project statuses, logs, scaffolding dialog
+- adopt GitHub flow for all changes (#1)
 
 ## [0.1.2] - 2026-07-19
 
