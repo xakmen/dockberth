@@ -2,6 +2,18 @@
 
 Thanks for helping! Issues and pull requests are welcome.
 
+## Branches and pull requests
+
+`main` is protected — every change (code, docs, CI alike) lands through a
+pull request with CI green, **squash-merged**. Branch names follow the
+commit types: `feat/<slug>`, `fix/<slug>`, `docs/<slug>`, `chore/<slug>`,
+… For work on an existing issue, use `<type>/<issue-number>-<slug>` and
+add `Closes #N` to the PR body.
+
+The **PR title must itself be a valid conventional commit** — on merge it
+becomes the commit message on `main` and feeds the changelog. Commit
+granularity inside your branch is up to you; it all squashes down.
+
 ## Developer Certificate of Origin (DCO)
 
 There is **no CLA**. Instead, every commit must be signed off under the
