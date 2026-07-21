@@ -14,6 +14,10 @@ interface UseProjectsResult {
   /** From the same poll: is the Traefik proxy container running?
    * null until the first successful poll. */
   proxyRunning: boolean | null;
+  /** Increments after every poll, so effects that must re-evaluate each
+   * poll (e.g. proxy self-heal) can depend on a value that always changes
+   * even when proxyRunning stays the same primitive. */
+  pollCount: number;
   loading: boolean;
   /** Reload the registry (after create / delete / hosts fix). */
   refresh: () => Promise<void>;
@@ -26,6 +30,7 @@ export function useProjects(): UseProjectsResult {
   const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [statuses, setStatuses] = useState<Record<string, ProjectStatus>>({});
   const [proxyRunning, setProxyRunning] = useState<boolean | null>(null);
+  const [pollCount, setPollCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const polling = useRef(false);
 
@@ -50,6 +55,7 @@ export function useProjects(): UseProjectsResult {
       // Docker down — keep the last known statuses, mark proxy unknown.
       setProxyRunning(null);
     } finally {
+      setPollCount((n) => n + 1);
       polling.current = false;
     }
   }, []);
@@ -72,7 +78,7 @@ export function useProjects(): UseProjectsResult {
     };
   }, [refresh, pollNow]);
 
-  return { projects, statuses, proxyRunning, loading, refresh, pollNow };
+  return { projects, statuses, proxyRunning, pollCount, loading, refresh, pollNow };
 }
 
 /** Status for one project, defaulting to stopped when unknown. */

@@ -47,21 +47,24 @@ export function useDockerStatus(): UseDockerStatusResult {
     setStarting(true);
     const startedAt = Date.now();
 
+    const timedOut = () => Date.now() - startedAt > START_TIMEOUT_MS;
     const poll = () => {
       pollTimer.current = window.setTimeout(() => {
         getDockerStatus()
           .then((next) => {
-            if (next.running) {
-              setStatus(next);
-              setStarting(false);
-            } else if (Date.now() - startedAt > START_TIMEOUT_MS) {
+            if (next.running || timedOut()) {
               setStatus(next);
               setStarting(false);
             } else {
               poll();
             }
           })
-          .catch(() => poll());
+          // A rejecting probe must still honor the timeout, or "Starting…"
+          // spins forever when the CLI stays wedged.
+          .catch(() => {
+            if (timedOut()) setStarting(false);
+            else poll();
+          });
       }, START_POLL_MS);
     };
 
