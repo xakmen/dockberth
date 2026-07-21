@@ -3,7 +3,8 @@
 //! Dockberth never talks to the Docker Engine API directly — every Docker
 //! interaction shells out to the `docker` CLI via the Tauri shell plugin.
 //! The CLI is identical on all platforms, which keeps this module portable;
-//! engine *detection* is the only per-platform part (see CLAUDE.md).
+//! engine *detection* is the only per-platform part (see
+//! docs/ARCHITECTURE.md).
 
 use serde::Serialize;
 use tauri::AppHandle;

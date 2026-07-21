@@ -2,12 +2,21 @@
 
 ## TL;DR
 
+Release prep goes through a PR like everything else (`main` is
+protected); only the tag is pushed directly.
+
 ```powershell
-npm run changelog                 # refresh CHANGELOG.md, commit it
-npm version 0.2.0                 # bumps package.json; sync-version.mjs
-                                  # updates Cargo.toml, tauri.conf.json,
-                                  # Cargo.lock; creates commit + tag v0.2.0
-git push --follow-tags            # tag v* triggers the Release workflow
+git checkout main; git pull
+git checkout -b chore/release-v0.2.0
+npm version 0.2.0 --no-git-tag-version   # bumps package.json; sync-version.mjs
+                                         # updates Cargo.toml, tauri.conf.json,
+                                         # Cargo.lock (no commit, no tag)
+npm run changelog                        # refresh CHANGELOG.md
+git commit -s -am "chore(release): v0.2.0"
+gh pr create --fill                      # wait for CI to go green
+gh pr merge --squash --delete-branch
+git checkout main; git pull
+git tag v0.2.0; git push origin v0.2.0   # tag v* triggers the Release workflow
 ```
 
 Then: **Actions** → wait for "Release" (~15–25 min) → **Releases** → the
@@ -20,6 +29,9 @@ review/edit the notes → **Publish**.
 - **package.json is the single source of truth** for the version. Never
   edit versions in Cargo.toml / tauri.conf.json by hand — `npm version`
   runs `scripts/sync-version.mjs` for you.
+- **Tags only from up-to-date `main`**, never from a branch — the tagged
+  commit must be the squash-merged release PR. Tag pushes bypass the
+  pull-request requirement by design; don't "fix" that.
 - **Never tick "Set as a pre-release"** on the GitHub release — the
   auto-updater reads `releases/latest/download/latest.json`, and GitHub's
   `latest` ignores pre-releases. An rc published as pre-release is
