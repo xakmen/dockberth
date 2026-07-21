@@ -42,7 +42,8 @@ interface Transition {
 function App() {
   useContextMenuGuard();
   const docker = useDockerStatus();
-  const { projects, statuses, proxyRunning, refresh, pollNow } = useProjects();
+  const { projects, statuses, proxyRunning, pollCount, refresh, pollNow } =
+    useProjects();
   const updater = useUpdater();
 
   const [proxy, setProxy] = useState<ProxyStatus | null>(null);
@@ -105,6 +106,9 @@ function App() {
 
   // Self-heal: the status poll sees the proxy container. If Docker is
   // responsive but the proxy is down, re-run proxy_ensure (30s backoff).
+  // Keyed on pollCount so it re-evaluates on every poll — proxyRunning
+  // staying the primitive `false` would otherwise never re-fire the effect,
+  // so a first attempt inside the backoff window was the only one.
   useEffect(() => {
     if (
       proxyRunning !== false || // null = docker unreachable / no poll yet
@@ -116,12 +120,11 @@ function App() {
     void runProxyEnsure().then((status) => {
       if (status.running) notify("Proxy restarted");
     });
-  }, [proxyRunning, runProxyEnsure, notify]);
+  }, [proxyRunning, pollCount, runProxyEnsure, notify]);
 
-  // Resolve transitions against fresh poll data: confirm the expected
-  // terminal state, or time out into "error" with a toast.
+  // Confirm a transition against fresh poll data: once the expected
+  // terminal state is observed, clear the transition (and any stale error).
   useEffect(() => {
-    const now = Date.now();
     setTransitions((prev) => {
       let changed = false;
       const next = { ...prev };
@@ -136,16 +139,40 @@ function App() {
             delete rest[name];
             return rest;
           });
-        } else if (now - t.startedAt > TRANSITION_TIMEOUT_MS) {
-          delete next[name];
-          changed = true;
-          setFailed((f) => ({ ...f, [name]: t.expected }));
-          notify(`${name}: did not reach "${t.expected}" within 30s`);
         }
       }
       return changed ? next : prev;
     });
-  }, [statuses, notify]);
+  }, [statuses]);
+
+  // Time transitions out on a self-driven interval, NOT off poll data:
+  // when Docker becomes unreachable the poll stops updating `statuses`, so
+  // a poll-keyed timeout would never fire and the button would spin forever.
+  const transitionsRef = useRef(transitions);
+  transitionsRef.current = transitions;
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      const now = Date.now();
+      const expired = Object.entries(transitionsRef.current).filter(
+        ([, t]) => now - t.startedAt > TRANSITION_TIMEOUT_MS,
+      );
+      if (expired.length === 0) return;
+      setTransitions((prev) => {
+        const next = { ...prev };
+        for (const [name] of expired) delete next[name];
+        return next;
+      });
+      setFailed((f) => {
+        const next = { ...f };
+        for (const [name, t] of expired) next[name] = t.expected;
+        return next;
+      });
+      for (const [name, t] of expired) {
+        notify(`${name}: did not reach "${t.expected}" within 30s`);
+      }
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [notify]);
 
   // Clear a stale error once polling finally reports the expected state.
   useEffect(() => {
@@ -186,6 +213,14 @@ function App() {
 
   const selected =
     projects.find((p) => p.name === selectedName) ?? projects[0] ?? null;
+
+  // The sidebar row reflects the last proxy_ensure result, but the 3s poll
+  // is the live source of truth: when it reports the container down, show
+  // that (with a Retry) instead of a stale "Proxy running".
+  const displayProxy = useMemo(
+    () => (proxy && proxyRunning === false ? { ...proxy, running: false } : proxy),
+    [proxy, proxyRunning],
+  );
 
   const handleAction = async (action: ProjectAction) => {
     if (!selected) return;
@@ -297,7 +332,7 @@ function App() {
         dockerLoading={docker.loading}
         dockerStarting={docker.starting}
         onStartDocker={docker.startDocker}
-        proxy={proxy}
+        proxy={displayProxy}
         onProxyRetry={() => void runProxyEnsure()}
       />
       {selected ? (
