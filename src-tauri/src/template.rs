@@ -43,6 +43,17 @@ pub fn is_reserved_project_name(name: &str) -> bool {
     name == "proxy" || name.starts_with("dockberth")
 }
 
+/// Safe for an unquoted YAML scalar (DB name / user / password). Rejects
+/// whitespace, newlines and YAML-structural characters; the default value
+/// is "app", and hand-edited configs must stay within this set.
+fn is_safe_db_value(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 64
+        && value
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.'))
+}
+
 /// Escape `$` as `$$` so docker-compose's `${VAR}` / `$VAR` interpolation
 /// treats the value literally (compose un-escapes `$$` back to a single
 /// `$`). Applied to user-controlled scalars rendered into the compose
@@ -134,6 +145,22 @@ pub fn render_project_compose(
             config.name
         ));
     }
+    // DB credentials are rendered into unquoted YAML scalars, so a hand-
+    // edited config.json with a value like "x\n  volumes: ..." could inject
+    // compose structure. Restrict to a safe charset (the default is "app").
+    for (label, value) in [
+        ("db name", &config.db_name),
+        ("db user", &config.db_user),
+        ("db password", &config.db_password),
+    ] {
+        if let Some(value) = value {
+            if !is_safe_db_value(value) {
+                return Err(format!(
+                    "invalid {label}: use letters, digits, '_', '-' or '.' (1-64 chars)"
+                ));
+            }
+        }
+    }
     let r = resolve_common(config, preset, uid, gid);
     let db_image = r.db.map(|d| d.image()).unwrap_or_default();
     let has_section = |name: &str| preset.extra_services.iter().any(|s| s == name);
@@ -202,8 +229,10 @@ pub fn render_project_compose(
                 .clone()
                 .or(preset.defaults.start_command.clone())
                 .unwrap_or("npm run dev".to_string());
-            if start_command.contains('"') || start_command.contains('\\') {
-                return Err("start command must not contain quotes or backslashes".into());
+            if start_command.contains(['"', '\\', '\n', '\r']) {
+                return Err(
+                    "start command must not contain quotes, backslashes or newlines".into(),
+                );
             }
             let start_command = escape_compose_dollar(&start_command);
             Ok(render(
@@ -399,16 +428,31 @@ mod tests {
     }
 
     #[test]
-    fn escapes_dollar_in_start_command_and_db_password() {
+    fn rejects_unsafe_db_values_and_newline_commands() {
+        let php = find_preset("laravel").unwrap();
+        let mut bad_db = config("laravel", Some(Database::Mariadb11), false);
+        bad_db.db_password = Some("x\n      volumes: []".into());
+        assert!(render_project_compose(php, &bad_db, "x.test", false, 0, 0).is_err());
+
+        let node = find_preset("node-generic").unwrap();
+        let mut nl = config("node-generic", None, false);
+        nl.start_command = Some("npm run dev\nrm -rf /".into());
+        assert!(render_project_compose(node, &nl, "x.test", false, 0, 0).is_err());
+
+        // The default "app" credentials still render fine.
+        let ok = config("laravel", Some(Database::Mariadb11), false);
+        assert!(render_project_compose(php, &ok, "x.test", false, 0, 0).is_ok());
+    }
+
+    #[test]
+    fn escapes_dollar_in_start_command() {
         let node = find_preset("node-generic").unwrap();
         let mut cfg = config("node-generic", Some(Database::Mysql84), false);
         cfg.start_command = Some("PORT=$PORT npm run dev".into());
-        cfg.db_password = Some("p$ss$word".into());
         let out = render_project_compose(node, &cfg, "x.test", false, 0, 0).unwrap();
-        // `$` is doubled so compose passes a literal `$` to the container.
+        // `$` is doubled so compose passes a literal `$` to the container
+        // (db_* can no longer contain `$` — charset-validated above).
         assert!(out.contains("PORT=$$PORT npm run dev"));
-        assert!(out.contains("p$$ss$$word"));
-        // No lone `$` (single, not part of a `$$` pair) survives.
         assert!(!out.replace("$$", "").contains('$'));
     }
 

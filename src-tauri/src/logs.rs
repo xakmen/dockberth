@@ -110,6 +110,14 @@ pub async fn logs_start(
     if !is_valid_project_name(&name) {
         return Err(format!("invalid project name '{name}'"));
     }
+    // Service names go straight into the docker/compose argv — validate them
+    // so a value like "--since=..." or "-f other.yml" can't change the
+    // command (matches project_open_shell).
+    for service in &services {
+        if !crate::projects::is_valid_service_name(service) {
+            return Err(format!("invalid service name '{service}'"));
+        }
+    }
     stop_session(&sessions, &name);
 
     let entry = find_entry(&app, &name)?;
