@@ -43,6 +43,11 @@ pub fn prepare_target(parent: &str, name: &str) -> Result<(PathBuf, bool), Strin
             "invalid project name '{name}': use lowercase letters, digits and hyphens"
         ));
     }
+    if crate::template::is_reserved_project_name(name) {
+        return Err(format!(
+            "'{name}' is reserved by Dockberth — it would collide with the proxy stack; pick another name"
+        ));
+    }
     let parent_dir = Path::new(parent);
     if !parent_dir.is_dir() {
         return Err(format!("'{parent}' is not a directory"));

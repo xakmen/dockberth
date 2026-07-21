@@ -190,6 +190,12 @@ pub async fn project_create(app: AppHandle, args: CreateArgs) -> Result<ProjectI
             args.name
         ));
     }
+    if template::is_reserved_project_name(&args.name) {
+        return Err(format!(
+            "'{}' is reserved by Dockberth — it would collide with the proxy stack; pick another name",
+            args.name
+        ));
+    }
     let dir = Path::new(&args.path);
     if !dir.is_dir() {
         return Err(format!("'{}' is not a directory", args.path));
