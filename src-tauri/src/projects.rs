@@ -64,6 +64,8 @@ pub(crate) fn compose_file(project_path: &str) -> String {
 }
 
 /// Sanitize a folder name into a valid project name: lowercase, [a-z0-9-].
+/// Falls back to "project" when nothing survives (e.g. an all-Cyrillic
+/// folder name) so the wizard always offers a usable suggestion.
 fn sanitize_name(raw: &str) -> String {
     let mut out = String::new();
     for c in raw.to_lowercase().chars() {
@@ -73,7 +75,24 @@ fn sanitize_name(raw: &str) -> String {
             out.push('-');
         }
     }
-    out.trim_matches('-').to_string()
+    let cleaned = out.trim_matches('-').to_string();
+    if cleaned.is_empty() {
+        "project".to_string()
+    } else {
+        cleaned
+    }
+}
+
+/// A compose service name (`app`, `db`, `redis`, …) is lowercase alnum with
+/// `-`/`_`. Used to keep frontend-supplied service arguments from turning
+/// into docker/compose flags.
+pub(crate) fn is_valid_service_name(service: &str) -> bool {
+    !service.is_empty()
+        // A leading '-' would let the value be read as a docker/compose flag.
+        && !service.starts_with('-')
+        && service
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
 }
 
 pub(crate) fn read_config(project_path: &str) -> Option<ProjectConfig> {
@@ -398,9 +417,7 @@ fn launch_terminal(command: Vec<String>) -> Result<(), String> {
 /// "tools" profile instead of `exec`.
 #[tauri::command]
 pub fn project_open_shell(app: AppHandle, name: String, service: String) -> Result<(), String> {
-    if !service.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
-        || service.is_empty()
-    {
+    if !is_valid_service_name(&service) {
         return Err(format!("invalid service name '{service}'"));
     }
     let entry = find_entry(&app, &name)?;
@@ -776,4 +793,28 @@ pub async fn project_services(app: AppHandle, name: String) -> Result<Vec<Servic
         .collect();
     services.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(services)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanitize_name_falls_back_for_non_ascii() {
+        assert_eq!(sanitize_name("Aqua Shop"), "aqua-shop");
+        assert_eq!(sanitize_name("shop_2"), "shop-2");
+        // All-Cyrillic folder name -> usable fallback, not empty.
+        assert_eq!(sanitize_name("Мій-проект"), "project");
+        assert_eq!(sanitize_name("---"), "project");
+    }
+
+    #[test]
+    fn service_name_validation() {
+        assert!(is_valid_service_name("app"));
+        assert!(is_valid_service_name("db_1"));
+        assert!(!is_valid_service_name(""));
+        assert!(!is_valid_service_name("--since=1h"));
+        assert!(!is_valid_service_name("-f"));
+        assert!(!is_valid_service_name("App"));
+    }
 }
