@@ -42,10 +42,12 @@ export function OverviewTab({
   project,
   status,
   services,
+  notify,
 }: {
   project: ProjectInfo;
   status: ProjectStatus;
   services: ServiceState[];
+  notify: (message: string) => void;
 }) {
   const runningCount = services.filter((s) => s.state === "running").length;
   const config = project.config;
@@ -183,7 +185,11 @@ export function OverviewTab({
               <Button
                 variant="outline"
                 disabled={service.tools ? !projectRunning : service.state !== "running"}
-                onClick={() => void openProjectShell(project.name, service.name)}
+                onClick={() =>
+                  void openProjectShell(project.name, service.name).catch(
+                    (err: unknown) => notify(`Couldn't open a shell: ${String(err)}`),
+                  )
+                }
                 className="h-auto shrink-0 rounded-[6px] border-input bg-transparent px-3 py-1 text-[11.5px] font-normal text-muted-foreground shadow-none hover:border-border-strong hover:bg-transparent hover:text-foreground dark:bg-transparent dark:hover:bg-transparent"
               >
                 Shell

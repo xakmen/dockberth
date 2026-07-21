@@ -140,6 +140,15 @@ export function DeleteProjectDialog({
             hint="docker compose down -v · irreversible"
             destructive
           />
+          {!removeVolumes ? (
+            <span className="px-1 text-[11px] leading-relaxed text-faint">
+              The database volume{" "}
+              <span className="font-mono">dockberth-{project.name}-db</span> is
+              kept — a future project named{" "}
+              <span className="font-mono">{project.name}</span> reattaches it,
+              with the old data and credentials.
+            </span>
+          ) : null}
           <OptionRow
             checked={removeDockberthDir}
             onChange={setRemoveDockberthDir}

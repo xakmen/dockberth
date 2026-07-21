@@ -47,6 +47,8 @@ interface ProjectViewProps {
   onFixHosts: () => void;
   fixingHosts: boolean;
   onDeleted: (message: string) => void;
+  /** Surface open/shell failures (VS Code / terminal not installed, …). */
+  notify: (message: string) => void;
 }
 
 const ACTION_BUTTON = "h-[34px] gap-[7px] rounded-md text-[12.5px] shadow-none";
@@ -62,9 +64,14 @@ export function ProjectView({
   onFixHosts,
   fixingHosts,
   onDeleted,
+  notify,
 }: ProjectViewProps) {
   const services = useProjectServices(project);
   const domain = projectDomain(project.name);
+  // Open actions shell out (VS Code, Explorer, browser); a rejection used
+  // to be a silent unhandled promise — the click just did nothing.
+  const openOr = (promise: Promise<unknown>, what: string) =>
+    void promise.catch((err: unknown) => notify(`Couldn't ${what}: ${String(err)}`));
   // Buttons derive from the same status as badge and sidebar dot:
   // running/partial/error → Stop + Restart; stopped → Start;
   // starting/stopping → a single disabled button with a spinner.
@@ -103,7 +110,10 @@ export function ProjectView({
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                void openUrl(`http://${domain}${project.openUrlPath}`);
+                openOr(
+                  openUrl(`http://${domain}${project.openUrlPath}`),
+                  "open the browser",
+                );
               }}
               className="flex items-center gap-[5px] font-mono text-[12.5px] text-primary hover:underline"
             >
@@ -164,20 +174,27 @@ export function ProjectView({
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem
                     onSelect={() =>
-                      void openUrl(`http://${domain}${project.openUrlPath}`)
+                      openOr(
+                        openUrl(`http://${domain}${project.openUrlPath}`),
+                        "open the browser",
+                      )
                     }
                   >
                     <ArrowUpRight className="size-3.5" />
                     Open in browser
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onSelect={() => void openProjectFolder(project.name)}
+                    onSelect={() =>
+                      openOr(openProjectFolder(project.name), "open the folder")
+                    }
                   >
                     <FolderOpen className="size-3.5" />
                     Open folder
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onSelect={() => void openProjectEditor(project.name)}
+                    onSelect={() =>
+                      openOr(openProjectEditor(project.name), "open VS Code")
+                    }
                   >
                     <Code className="size-3.5" />
                     Open in VS Code
@@ -253,7 +270,12 @@ export function ProjectView({
         </div>
 
         <TabsContent value="overview" className="min-h-0 flex-1">
-          <OverviewTab project={project} status={status} services={services} />
+          <OverviewTab
+            project={project}
+            status={status}
+            services={services}
+            notify={notify}
+          />
         </TabsContent>
         <TabsContent value="logs" className="min-h-0 flex-1">
           <LogsTab project={project} status={status} services={services} />

@@ -75,6 +75,9 @@ export function SettingsDialog({
     try {
       await onApplyDomainSuffix(suffix);
       setConfirmOpen(false);
+    } catch {
+      // The error is surfaced by the caller (toast); keep the confirm
+      // dialog open so the user can retry instead of failing silently.
     } finally {
       setApplying(false);
     }
