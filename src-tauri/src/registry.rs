@@ -9,7 +9,15 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
+use tauri::async_runtime::Mutex;
 use tauri::{AppHandle, Manager};
+
+/// Serializes registry load-modify-save so concurrent `project_create` /
+/// `project_delete` (Tauri runs commands concurrently) cannot clobber each
+/// other. Managed state; mutators lock it around the final commit and
+/// re-read the registry inside the lock to work from fresh data.
+#[derive(Default)]
+pub struct RegistryLock(pub Mutex<()>);
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Database {

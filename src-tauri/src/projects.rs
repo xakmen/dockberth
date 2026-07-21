@@ -7,7 +7,7 @@ use std::fs;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, State};
 use tauri_plugin_shell::ShellExt;
 
 use crate::docker::{map_container_state, run_docker_checked};
@@ -183,7 +183,11 @@ pub struct CreateArgs {
 /// it, and ensure the hosts entry (single UAC prompt; a decline does not
 /// fail the creation — the UI offers a retry).
 #[tauri::command]
-pub async fn project_create(app: AppHandle, args: CreateArgs) -> Result<ProjectInfo, String> {
+pub async fn project_create(
+    app: AppHandle,
+    lock: State<'_, registry::RegistryLock>,
+    args: CreateArgs,
+) -> Result<ProjectInfo, String> {
     if !template::is_valid_project_name(&args.name) {
         return Err(format!(
             "invalid project name '{}': use lowercase letters, digits and hyphens",
@@ -290,14 +294,27 @@ pub async fn project_create(app: AppHandle, args: CreateArgs) -> Result<ProjectI
     crate::atomic::write(&dockberth_dir.join("config.json"), config_json)
         .map_err(|e| format!("cannot write config.json: {e}"))?;
 
-    let mut entries = entries;
     let entry = RegistryEntry {
         name: args.name.clone(),
         path: args.path.clone(),
         created_at: registry::now_millis(),
     };
-    entries.push(entry.clone());
-    registry::save_entries(&app, entries)?;
+    {
+        // Commit under the registry lock, re-reading fresh entries so a
+        // concurrent create/delete during the slow WSL/render work above
+        // cannot clobber this write. The early duplicate check is only a
+        // fast-fail; this one is authoritative.
+        let _guard = lock.0.lock().await;
+        let mut entries = registry::load_entries(&app)?;
+        if entries.iter().any(|e| e.name == args.name) {
+            return Err(format!("a project named '{}' already exists", args.name));
+        }
+        if entries.iter().any(|e| e.path == args.path) {
+            return Err("this folder is already registered as a project".into());
+        }
+        entries.push(entry.clone());
+        registry::save_entries(&app, entries)?;
+    }
 
     // Hosts entry — best-effort; hosts_ok=false surfaces a retry banner.
     let _ = hosts::hosts_ensure(app.clone(), project_domain).await;
@@ -449,6 +466,7 @@ pub struct DeleteResult {
 #[tauri::command]
 pub async fn project_delete(
     app: AppHandle,
+    lock: State<'_, registry::RegistryLock>,
     name: String,
     options: DeleteOptions,
 ) -> Result<DeleteResult, String> {
@@ -481,11 +499,15 @@ pub async fn project_delete(
         }
     }
 
-    let remaining = registry::load_entries(&app)?
-        .into_iter()
-        .filter(|e| e.name != name)
-        .collect();
-    registry::save_entries(&app, remaining)?;
+    {
+        // Serialize with concurrent create/delete (see RegistryLock).
+        let _guard = lock.0.lock().await;
+        let remaining: Vec<_> = registry::load_entries(&app)?
+            .into_iter()
+            .filter(|e| e.name != name)
+            .collect();
+        registry::save_entries(&app, remaining)?;
+    }
     Ok(DeleteResult { hosts_removed })
 }
 
