@@ -3,6 +3,17 @@
 All notable changes to Dockberth. Generated from conventional commits
 with [git-cliff](https://git-cliff.org).
 
+## [0.2.0] - 2026-07-27
+
+### Features
+
+- custom database credentials and copyable connection card (#49)
+- show Redis connection details in a tabbed Connections card (#50)
+
+### Fixes
+
+- honor explicit 'None' database choice for presets with a DB default (#51)
+
 ## [0.1.3] - 2026-07-21
 
 ### Features
