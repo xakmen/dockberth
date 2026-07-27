@@ -261,14 +261,11 @@ pub async fn project_create(
     }
 
     // Store resolved values so regeneration is stable even if preset
-    // defaults change in a later Dockberth version.
-    let has_db = args.db.or_else(|| {
-        preset
-            .defaults
-            .db
-            .as_deref()
-            .and_then(|id| serde_json::from_value(serde_json::json!(id)).ok())
-    });
+    // defaults change in a later Dockberth version. The dialog always
+    // sends an explicit db choice (null = no database), so there is no
+    // preset-default fallback here — it used to override an explicit
+    // "None" for presets with a defaults.db (issue #48).
+    let has_db = args.db;
     let config = ProjectConfig {
         name: args.name.clone(),
         preset: Some(preset.id.clone()),
