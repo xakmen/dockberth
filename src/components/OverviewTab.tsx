@@ -8,6 +8,7 @@ import {
   PRESET_LABEL,
   dbConnection,
   openProjectShell,
+  redisConnection,
   type ProjectInfo,
   type ProjectStatus,
   type ServiceState,
@@ -96,6 +97,7 @@ export function OverviewTab({
   const runningCount = services.filter((s) => s.state === "running").length;
   const config = project.config;
   const db = config ? dbConnection(config) : null;
+  const redis = config ? redisConnection(config) : null;
   const projectRunning = status === "running" || status === "partial";
 
   // WP-CLI is a `tools`-profile companion, not a running service — show it
@@ -190,6 +192,22 @@ export function OverviewTab({
             Use these in wp-config.php / .env — Dockberth never edits your
             code. The host is the compose service name, reachable from the
             app container.
+          </div>
+        </Card>
+      ) : null}
+
+      {/* Redis connection — same wiring purpose as the Database card. */}
+      {redis ? (
+        <Card className={`${CARD} col-span-2`}>
+          <div className="section-label">Redis connection</div>
+          <div className="grid grid-cols-3 gap-x-3 gap-y-2.5">
+            <CopyField label="Host (from containers)" value={redis.host} notify={notify} />
+            <CopyField label="Port" value={String(redis.port)} notify={notify} />
+            <CopyField label="URL" value={redis.url} notify={notify} />
+          </div>
+          <div className="text-[11.5px] leading-relaxed text-faint">
+            No password — Redis is only reachable from this project's
+            containers, not from Windows.
           </div>
         </Card>
       ) : null}
