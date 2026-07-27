@@ -69,9 +69,9 @@ pub struct ProjectConfig {
     pub db: Option<Database>,
     #[serde(default)]
     pub redis: bool,
-    /// DB credentials as rendered into the compose file. Legacy configs
-    /// (pre-preset) rendered "laravel" for all three — the UI falls back
-    /// to that when these are absent.
+    /// DB credentials as rendered into the compose file. When absent the
+    /// renderer (and the UI's Database card) falls back to "app" for all
+    /// three — see template::DEFAULT_DB_NAME.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub db_name: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -202,6 +202,6 @@ mod tests {
         assert_eq!(config.base.as_deref(), Some("php"));
         assert_eq!(config.php_version.as_deref(), Some("8.4"));
         assert_eq!(config.db, Some(Database::Mariadb11));
-        assert!(config.db_name.is_none()); // UI falls back to "laravel"
+        assert!(config.db_name.is_none()); // renderer and UI fall back to "app"
     }
 }

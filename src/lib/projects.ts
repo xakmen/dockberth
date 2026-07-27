@@ -119,6 +119,10 @@ export interface CreateProjectArgs {
   redis: boolean;
   startCommand?: string;
   appPort?: number;
+  /** Custom DB credentials; omitted = the "app" defaults. */
+  dbName?: string;
+  dbUser?: string;
+  dbPassword?: string;
 }
 
 export const PHP_VERSIONS = ["8.1", "8.2", "8.3", "8.4"] as const;
@@ -237,16 +241,26 @@ export function isValidProjectName(name: string): boolean {
   return /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(name) && name.length <= 63;
 }
 
-/** DB connection details as rendered into the compose file. Legacy configs
- * (pre-preset milestones) rendered "laravel" for name/user/password. */
+/** Default DB name/user/password — mirror of template::DEFAULT_DB_NAME on
+ * the Rust side; the compose renderer falls back to it for configs missing
+ * these fields, so the card must show the same value. */
+export const DEFAULT_DB_VALUE = "app";
+
+/** Mirror of the Rust-side is_safe_db_value: safe as an unquoted YAML
+ * scalar in the generated compose file. */
+export function isValidDbValue(value: string): boolean {
+  return /^[A-Za-z0-9_.-]{1,64}$/.test(value);
+}
+
+/** DB connection details as rendered into the compose file. */
 export function dbConnection(config: ProjectConfig) {
   if (!config.db) return null;
   return {
     host: "db",
     port: DB_PORT[config.db],
-    database: config.dbName ?? "laravel",
-    user: config.dbUser ?? "laravel",
-    password: config.dbPassword ?? "laravel",
+    database: config.dbName ?? DEFAULT_DB_VALUE,
+    user: config.dbUser ?? DEFAULT_DB_VALUE,
+    password: config.dbPassword ?? DEFAULT_DB_VALUE,
   };
 }
 

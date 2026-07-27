@@ -196,6 +196,14 @@ pub struct CreateArgs {
     pub start_command: Option<String>,
     #[serde(default)]
     pub app_port: Option<u16>,
+    /// Custom DB credentials; None = the "app" defaults. Ignored when the
+    /// project has no database.
+    #[serde(default)]
+    pub db_name: Option<String>,
+    #[serde(default)]
+    pub db_user: Option<String>,
+    #[serde(default)]
+    pub db_password: Option<String>,
 }
 
 /// Create a project: render compose + config into `.dockberth/`, register
@@ -276,9 +284,12 @@ pub async fn project_create(
         node_version: args.node_version.or(preset.defaults.node_version.clone()),
         db: has_db,
         redis: args.redis,
-        db_name: has_db.map(|_| template::DEFAULT_DB_NAME.to_string()),
-        db_user: has_db.map(|_| template::DEFAULT_DB_NAME.to_string()),
-        db_password: has_db.map(|_| template::DEFAULT_DB_NAME.to_string()),
+        db_name: has_db
+            .map(|_| args.db_name.clone().unwrap_or(template::DEFAULT_DB_NAME.to_string())),
+        db_user: has_db
+            .map(|_| args.db_user.clone().unwrap_or(template::DEFAULT_DB_NAME.to_string())),
+        db_password: has_db
+            .map(|_| args.db_password.clone().unwrap_or(template::DEFAULT_DB_NAME.to_string())),
         start_command: args.start_command.or(preset.defaults.start_command.clone()),
         app_port: Some(args.app_port.unwrap_or(preset.app_port)),
         location: Some(location.clone()),
