@@ -252,6 +252,13 @@ export function isValidDbValue(value: string): boolean {
   return /^[A-Za-z0-9_.-]{1,64}$/.test(value);
 }
 
+/** Redis connection details. The service ships with no auth and no
+ * published port — reachable only from the project's containers. */
+export function redisConnection(config: ProjectConfig) {
+  if (!config.redis) return null;
+  return { host: "redis", port: 6379, url: "redis://redis:6379" };
+}
+
 /** DB connection details as rendered into the compose file. */
 export function dbConnection(config: ProjectConfig) {
   if (!config.db) return null;

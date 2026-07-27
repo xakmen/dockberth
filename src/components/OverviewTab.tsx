@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusDot } from "@/components/StatusDot";
 import {
   DB_LABEL,
   PRESET_LABEL,
   dbConnection,
   openProjectShell,
+  redisConnection,
   type ProjectInfo,
   type ProjectStatus,
   type ServiceState,
@@ -96,6 +98,7 @@ export function OverviewTab({
   const runningCount = services.filter((s) => s.state === "running").length;
   const config = project.config;
   const db = config ? dbConnection(config) : null;
+  const redis = config ? redisConnection(config) : null;
   const projectRunning = status === "running" || status === "partial";
 
   // WP-CLI is a `tools`-profile companion, not a running service — show it
@@ -171,26 +174,57 @@ export function OverviewTab({
         </div>
       </Card>
 
-      {/* Database connection — for wiring existing code (wp-config.php,
-          .env) to the generated environment. */}
-      {db ? (
+      {/* Connections — for wiring existing code (wp-config.php, .env) to
+          the generated environment; one card, tabbed per service. */}
+      {db || redis ? (
         <Card className={`${CARD} col-span-2`}>
-          <div className="section-label">Database connection</div>
-          <div className="grid grid-cols-3 gap-x-3 gap-y-2.5">
-            <CopyField label="Host (from containers)" value={db.host} notify={notify} />
-            <CopyField label="Port" value={String(db.port)} notify={notify} />
-            <CopyField label="Database" value={db.database} notify={notify} />
-            <CopyField label="User" value={db.user} notify={notify} />
-            <CopyField label="Password" value={db.password} notify={notify} />
-            {config?.db !== "postgres-16" ? (
-              <CopyField label="Root password" value="root" notify={notify} />
+          <Tabs defaultValue={db ? "db" : "redis"} className="gap-3">
+            <div className="flex items-center justify-between">
+              <div className="section-label">Connections</div>
+              {db && redis ? (
+                <TabsList className="h-7 rounded-md p-[2px]">
+                  <TabsTrigger value="db" className="rounded-[5px] px-3 text-xs">
+                    {config?.db ? DB_LABEL[config.db] : "Database"}
+                  </TabsTrigger>
+                  <TabsTrigger value="redis" className="rounded-[5px] px-3 text-xs">
+                    Redis
+                  </TabsTrigger>
+                </TabsList>
+              ) : null}
+            </div>
+            {db ? (
+              <TabsContent value="db" className="flex flex-col gap-3">
+                <div className="grid grid-cols-3 gap-x-3 gap-y-2.5">
+                  <CopyField label="Host (from containers)" value={db.host} notify={notify} />
+                  <CopyField label="Port" value={String(db.port)} notify={notify} />
+                  <CopyField label="Database" value={db.database} notify={notify} />
+                  <CopyField label="User" value={db.user} notify={notify} />
+                  <CopyField label="Password" value={db.password} notify={notify} />
+                  {config?.db !== "postgres-16" ? (
+                    <CopyField label="Root password" value="root" notify={notify} />
+                  ) : null}
+                </div>
+                <div className="text-[11.5px] leading-relaxed text-faint">
+                  Use these in wp-config.php / .env — Dockberth never edits
+                  your code. The host is the compose service name, reachable
+                  from the app container.
+                </div>
+              </TabsContent>
             ) : null}
-          </div>
-          <div className="text-[11.5px] leading-relaxed text-faint">
-            Use these in wp-config.php / .env — Dockberth never edits your
-            code. The host is the compose service name, reachable from the
-            app container.
-          </div>
+            {redis ? (
+              <TabsContent value="redis" className="flex flex-col gap-3">
+                <div className="grid grid-cols-3 gap-x-3 gap-y-2.5">
+                  <CopyField label="Host (from containers)" value={redis.host} notify={notify} />
+                  <CopyField label="Port" value={String(redis.port)} notify={notify} />
+                  <CopyField label="URL" value={redis.url} notify={notify} />
+                </div>
+                <div className="text-[11.5px] leading-relaxed text-faint">
+                  No password — Redis is only reachable from this project's
+                  containers, not from Windows.
+                </div>
+              </TabsContent>
+            ) : null}
+          </Tabs>
         </Card>
       ) : null}
 
