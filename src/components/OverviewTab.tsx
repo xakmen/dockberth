@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusDot } from "@/components/StatusDot";
@@ -15,6 +17,48 @@ import {
 // their content width — that pushed cards past the viewport at ~900px.
 const CARD =
   "min-w-0 gap-3 rounded-lg border-border bg-card px-5 py-[18px] shadow-none";
+
+/** Labeled credential value; the whole field is a click-to-copy target. */
+function CopyField({
+  label,
+  value,
+  notify,
+}: {
+  label: string;
+  value: string;
+  notify: (message: string) => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    } catch {
+      notify("Couldn't copy to clipboard");
+    }
+  };
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <span title={label} className="truncate text-[11px] text-muted-foreground">
+        {label}
+      </span>
+      <button
+        type="button"
+        onClick={() => void copy()}
+        title={`Copy: ${value}`}
+        className="group flex min-w-0 cursor-pointer items-center justify-between gap-2 rounded-md border border-input bg-input-background px-2.5 py-[6px] text-left hover:border-border-strong"
+      >
+        <span className="min-w-0 truncate font-mono text-[12.5px]">{value}</span>
+        {copied ? (
+          <Check className="size-3.5 shrink-0 text-status-running" />
+        ) : (
+          <Copy className="size-3.5 shrink-0 text-faint group-hover:text-foreground" />
+        )}
+      </button>
+    </div>
+  );
+}
 
 function Row({ label, value, mono = true }: { label: string; value: string; mono?: boolean }) {
   // The value wins the space fight: labels are decorative and may truncate,
@@ -132,13 +176,15 @@ export function OverviewTab({
       {db ? (
         <Card className={`${CARD} col-span-2`}>
           <div className="section-label">Database connection</div>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 text-[13px]">
-            <Row label="Host (from containers)" value={db.host} />
-            <Row label="Port" value={String(db.port)} />
-            <Row label="Database" value={db.database} />
-            <Row label="User" value={db.user} />
-            <Row label="Password" value={db.password} />
-            <Row label="Root password (MySQL/MariaDB)" value="root" />
+          <div className="grid grid-cols-3 gap-x-3 gap-y-2.5">
+            <CopyField label="Host (from containers)" value={db.host} notify={notify} />
+            <CopyField label="Port" value={String(db.port)} notify={notify} />
+            <CopyField label="Database" value={db.database} notify={notify} />
+            <CopyField label="User" value={db.user} notify={notify} />
+            <CopyField label="Password" value={db.password} notify={notify} />
+            {config?.db !== "postgres-16" ? (
+              <CopyField label="Root password" value="root" notify={notify} />
+            ) : null}
           </div>
           <div className="text-[11.5px] leading-relaxed text-faint">
             Use these in wp-config.php / .env — Dockberth never edits your

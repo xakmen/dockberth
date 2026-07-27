@@ -23,9 +23,11 @@ import {
 } from "@/components/ui/select";
 import {
   DB_LABEL,
+  DEFAULT_DB_VALUE,
   NODE_VERSIONS,
   PHP_VERSIONS,
   createProject,
+  isValidDbValue,
   detectProject,
   isValidProjectName,
   joinPath,
@@ -98,6 +100,9 @@ export function NewProjectDialog({
   const [phpVersion, setPhpVersion] = useState<string>("8.3");
   const [nodeVersion, setNodeVersion] = useState<string>("22");
   const [db, setDb] = useState<DbChoice>("mariadb-11");
+  const [dbName, setDbName] = useState(DEFAULT_DB_VALUE);
+  const [dbUser, setDbUser] = useState(DEFAULT_DB_VALUE);
+  const [dbPassword, setDbPassword] = useState(DEFAULT_DB_VALUE);
   const [redis, setRedis] = useState(false);
   const [startCommand, setStartCommand] = useState("npm run dev");
   const [appPort, setAppPort] = useState("3000");
@@ -135,6 +140,9 @@ export function NewProjectDialog({
     setPhpVersion("8.3");
     setNodeVersion("22");
     setDb("mariadb-11");
+    setDbName(DEFAULT_DB_VALUE);
+    setDbUser(DEFAULT_DB_VALUE);
+    setDbPassword(DEFAULT_DB_VALUE);
     setRedis(false);
     setStartCommand("npm run dev");
     setAppPort("3000");
@@ -242,6 +250,16 @@ export function NewProjectDialog({
   const activePreset = mode === "existing" ? preset : stackPreset;
 
   const portValid = /^\d+$/.test(appPort) && +appPort > 0 && +appPort < 65536;
+  /** Mirror of the Rust-side checks in template::render_project_compose. */
+  const dbCredsError =
+    db === "none"
+      ? null
+      : ![dbName, dbUser, dbPassword].every(isValidDbValue)
+        ? "Use letters, digits, '_', '-' or '.' (1-64 chars)"
+        : db !== "postgres-16" && dbUser === "root"
+          ? "'root' is reserved by MySQL/MariaDB — pick a different user"
+          : null;
+  const dbCredsValid = dbCredsError === null;
   const locationOk =
     activeLocation !== null &&
     (activeLocation.kind !== "wsl" || wslCheck.state === "ok");
@@ -250,11 +268,11 @@ export function NewProjectDialog({
     !busy && path !== "" && preset !== null && isValidProjectName(name) &&
     (preset.base !== "php" || db !== "none") &&
     (preset.base !== "node" || (portValid && startCommand.trim() !== "")) &&
-    locationOk;
+    dbCredsValid && locationOk;
 
   const canCreateNew =
     !busy && parentPath !== "" && stackPreset?.scaffold != null &&
-    isValidProjectName(name) && db !== "none" && locationOk;
+    isValidProjectName(name) && db !== "none" && dbCredsValid && locationOk;
 
   // `chosen` carries the base directly, so we never fall back to "php" when
   // the preset list failed to load. Node fields are only sent in existing
@@ -276,6 +294,9 @@ export function NewProjectDialog({
       redis,
       startCommand: base === "node" ? nodeOverrides?.startCommand : undefined,
       appPort: base === "node" ? nodeOverrides?.appPort : undefined,
+      dbName: db === "none" ? undefined : dbName,
+      dbUser: db === "none" ? undefined : dbUser,
+      dbPassword: db === "none" ? undefined : dbPassword,
     });
     setPendingCreate(null);
     reset();
@@ -675,6 +696,60 @@ export function NewProjectDialog({
                 </div>
               </div>
             </>
+          ) : null}
+
+          {/* Database credentials — written into the generated compose file;
+              defaults match the Rust-side DEFAULT_DB_NAME ("app"). */}
+          {activePreset && db !== "none" ? (
+            <div className="flex flex-col gap-1.5">
+              <Label className={FIELD_LABEL}>Database credentials</Label>
+              <div className="grid grid-cols-3 gap-3.5">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="db-name" className="text-[11px] font-normal text-muted-foreground">
+                    Database
+                  </Label>
+                  <Input
+                    id="db-name"
+                    value={dbName}
+                    disabled={busy}
+                    onChange={(e) => setDbName(e.target.value)}
+                    className={`${FIELD_INPUT} font-mono text-xs`}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="db-user" className="text-[11px] font-normal text-muted-foreground">
+                    User
+                  </Label>
+                  <Input
+                    id="db-user"
+                    value={dbUser}
+                    disabled={busy}
+                    onChange={(e) => setDbUser(e.target.value)}
+                    className={`${FIELD_INPUT} font-mono text-xs`}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="db-password" className="text-[11px] font-normal text-muted-foreground">
+                    Password
+                  </Label>
+                  <Input
+                    id="db-password"
+                    value={dbPassword}
+                    disabled={busy}
+                    onChange={(e) => setDbPassword(e.target.value)}
+                    className={`${FIELD_INPUT} font-mono text-xs`}
+                  />
+                </div>
+              </div>
+              {dbCredsError ? (
+                <span className="text-[11.5px] text-status-error">{dbCredsError}</span>
+              ) : (
+                <span className="text-[11.5px] text-muted-foreground">
+                  Local dev credentials — they land in the generated compose
+                  file and the project's Database card.
+                </span>
+              )}
+            </div>
           ) : null}
 
           {/* Optional services */}

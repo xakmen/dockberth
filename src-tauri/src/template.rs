@@ -161,6 +161,16 @@ pub fn render_project_compose(
             }
         }
     }
+    // MySQL/MariaDB entrypoints refuse to initialize with MYSQL_USER=root
+    // (the root account is configured via MYSQL_ROOT_PASSWORD instead), so
+    // the container would crash-loop on first start.
+    if let Some(db) = config.db {
+        if !db.is_postgres() && config.db_user.as_deref() == Some("root") {
+            return Err(
+                "db user 'root' is reserved by MySQL/MariaDB — pick a different user".into(),
+            );
+        }
+    }
     let r = resolve_common(config, preset, uid, gid);
     let db_image = r.db.map(|d| d.image()).unwrap_or_default();
     let has_section = |name: &str| preset.extra_services.iter().any(|s| s == name);
@@ -446,6 +456,31 @@ mod tests {
         // The default "app" credentials still render fine.
         let ok = config("laravel", Some(Database::Mariadb11), false);
         assert!(render_project_compose(php, &ok, "x.test", false, 0, 0).is_ok());
+    }
+
+    #[test]
+    fn renders_custom_db_credentials() {
+        let php = find_preset("laravel").unwrap();
+        let mut cfg = config("laravel", Some(Database::Mariadb11), false);
+        cfg.db_name = Some("shop".into());
+        cfg.db_user = Some("shop_admin".into());
+        cfg.db_password = Some("s3cret-1".into());
+        let out = render_project_compose(php, &cfg, "x.test", false, 0, 0).unwrap();
+        assert!(out.contains("MYSQL_DATABASE: shop"));
+        assert!(out.contains("MYSQL_USER: shop_admin"));
+        assert!(out.contains("MYSQL_PASSWORD: s3cret-1"));
+    }
+
+    #[test]
+    fn rejects_root_db_user_for_mysql_but_not_postgres() {
+        let php = find_preset("laravel").unwrap();
+        let mut mysql = config("laravel", Some(Database::Mysql84), false);
+        mysql.db_user = Some("root".into());
+        assert!(render_project_compose(php, &mysql, "x.test", false, 0, 0).is_err());
+
+        let mut postgres = config("laravel", Some(Database::Postgres16), false);
+        postgres.db_user = Some("root".into());
+        assert!(render_project_compose(php, &postgres, "x.test", false, 0, 0).is_ok());
     }
 
     #[test]
