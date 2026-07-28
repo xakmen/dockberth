@@ -193,6 +193,8 @@ pub struct CreateArgs {
     #[serde(default)]
     pub redis: bool,
     #[serde(default)]
+    pub mailpit: bool,
+    #[serde(default)]
     pub start_command: Option<String>,
     #[serde(default)]
     pub app_port: Option<u16>,
@@ -281,6 +283,7 @@ pub async fn project_create(
         node_version: args.node_version.or(preset.defaults.node_version.clone()),
         db: has_db,
         redis: args.redis,
+        mailpit: args.mailpit,
         db_name: has_db
             .map(|_| args.db_name.clone().unwrap_or(template::DEFAULT_DB_NAME.to_string())),
         db_user: has_db
@@ -314,6 +317,9 @@ pub async fn project_create(
         if !is_wsl {
             crate::atomic::write(&dockberth_dir.join("php-fpm-root-run"), template::FPM_ROOT_RUN)
                 .map_err(|e| format!("cannot write php-fpm-root-run: {e}"))?;
+        }
+        if config.mailpit {
+            write_mailpit_bridge(&dockberth_dir)?;
         }
     }
     let config_json = serde_json::to_string_pretty(&config)
@@ -667,6 +673,21 @@ pub struct ApplySuffixResult {
     pub errors: Vec<String>,
 }
 
+/// Write the PHP mail() → Mailpit bridge files the compose file mounts
+/// into the app container (see template::MAILPIT_INI).
+fn write_mailpit_bridge(dockberth_dir: &Path) -> Result<(), String> {
+    crate::atomic::write(
+        &dockberth_dir.join("dockberth-sendmail.php"),
+        template::MAILPIT_SENDMAIL,
+    )
+    .map_err(|e| format!("cannot write dockberth-sendmail.php: {e}"))?;
+    crate::atomic::write(
+        &dockberth_dir.join("dockberth-mailpit.ini"),
+        template::MAILPIT_INI,
+    )
+    .map_err(|e| format!("cannot write dockberth-mailpit.ini: {e}"))
+}
+
 /// Re-render one project's compose file from its stored config with the
 /// new domain — same overwrite model as the proxy compose deploy.
 async fn rerender_project(
@@ -689,11 +710,14 @@ async fn rerender_project(
     let project_domain = domain::project_domain(&entry.name, suffix);
     let compose =
         template::render_project_compose(preset, &config, &project_domain, is_wsl, uid, gid)?;
-    crate::atomic::write(
-        &Path::new(&entry.path).join(".dockberth").join("docker-compose.yml"),
-        compose,
-    )
-    .map_err(|e| format!("cannot write docker-compose.yml: {e}"))?;
+    let dockberth_dir = Path::new(&entry.path).join(".dockberth");
+    crate::atomic::write(&dockberth_dir.join("docker-compose.yml"), compose)
+        .map_err(|e| format!("cannot write docker-compose.yml: {e}"))?;
+    // Keep the mounted bridge files in sync (a config.json edited by hand
+    // may have enabled mailpit since the last render).
+    if preset.base == BaseKind::Php && config.mailpit {
+        write_mailpit_bridge(&dockberth_dir)?;
+    }
     Ok(())
 }
 

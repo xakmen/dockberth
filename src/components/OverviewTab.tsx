@@ -8,6 +8,7 @@ import {
   DB_LABEL,
   PRESET_LABEL,
   dbConnection,
+  mailpitConnection,
   openProjectShell,
   redisConnection,
   type ProjectInfo,
@@ -99,6 +100,8 @@ export function OverviewTab({
   const config = project.config;
   const db = config ? dbConnection(config) : null;
   const redis = config ? redisConnection(config) : null;
+  const mailpit = config ? mailpitConnection(config) : null;
+  const connectionTabs = [db, redis, mailpit].filter(Boolean).length;
   const projectRunning = status === "running" || status === "partial";
 
   // WP-CLI is a `tools`-profile companion, not a running service — show it
@@ -139,6 +142,7 @@ export function OverviewTab({
             )}
             {config.db ? <Row label="Database" value={DB_LABEL[config.db]} /> : null}
             {config.redis ? <Row label="Cache" value="Redis 7" /> : null}
+            {config.mailpit ? <Row label="Mail" value="Mailpit" /> : null}
           </div>
         ) : (
           <div className="text-xs text-status-error">
@@ -176,19 +180,28 @@ export function OverviewTab({
 
       {/* Connections — for wiring existing code (wp-config.php, .env) to
           the generated environment; one card, tabbed per service. */}
-      {db || redis ? (
+      {connectionTabs > 0 ? (
         <Card className={`${CARD} col-span-2`}>
-          <Tabs defaultValue={db ? "db" : "redis"} className="gap-3">
+          <Tabs defaultValue={db ? "db" : redis ? "redis" : "mailpit"} className="gap-3">
             <div className="flex items-center justify-between">
               <div className="section-label">Connections</div>
-              {db && redis ? (
+              {connectionTabs > 1 ? (
                 <TabsList className="h-7 rounded-md p-[2px]">
-                  <TabsTrigger value="db" className="rounded-[5px] px-3 text-xs">
-                    {config?.db ? DB_LABEL[config.db] : "Database"}
-                  </TabsTrigger>
-                  <TabsTrigger value="redis" className="rounded-[5px] px-3 text-xs">
-                    Redis
-                  </TabsTrigger>
+                  {db ? (
+                    <TabsTrigger value="db" className="rounded-[5px] px-3 text-xs">
+                      {config?.db ? DB_LABEL[config.db] : "Database"}
+                    </TabsTrigger>
+                  ) : null}
+                  {redis ? (
+                    <TabsTrigger value="redis" className="rounded-[5px] px-3 text-xs">
+                      Redis
+                    </TabsTrigger>
+                  ) : null}
+                  {mailpit ? (
+                    <TabsTrigger value="mailpit" className="rounded-[5px] px-3 text-xs">
+                      Mailpit
+                    </TabsTrigger>
+                  ) : null}
                 </TabsList>
               ) : null}
             </div>
@@ -221,6 +234,19 @@ export function OverviewTab({
                 <div className="text-[11.5px] leading-relaxed text-faint">
                   No password — Redis is only reachable from this project's
                   containers, not from Windows.
+                </div>
+              </TabsContent>
+            ) : null}
+            {mailpit ? (
+              <TabsContent value="mailpit" className="flex flex-col gap-3">
+                <div className="grid grid-cols-3 gap-x-3 gap-y-2.5">
+                  <CopyField label="SMTP host (from containers)" value={mailpit.host} notify={notify} />
+                  <CopyField label="SMTP port" value={String(mailpit.smtpPort)} notify={notify} />
+                  <CopyField label="Web UI" value={mailpit.url} notify={notify} />
+                </div>
+                <div className="text-[11.5px] leading-relaxed text-faint">
+                  Point your app's SMTP at mailpit:1025 — outgoing email is
+                  caught and shown in the web UI instead of being delivered.
                 </div>
               </TabsContent>
             ) : null}

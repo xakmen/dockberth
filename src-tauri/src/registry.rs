@@ -69,6 +69,9 @@ pub struct ProjectConfig {
     pub db: Option<Database>,
     #[serde(default)]
     pub redis: bool,
+    /// Optional Mailpit service (SMTP catcher + web UI at /mailpit).
+    #[serde(default)]
+    pub mailpit: bool,
     /// DB credentials as rendered into the compose file. When absent the
     /// renderer (and the UI's Database card) falls back to "app" for all
     /// three — see template::DEFAULT_DB_NAME.

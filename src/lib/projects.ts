@@ -60,6 +60,7 @@ export interface ProjectConfig {
   nodeVersion?: string | null;
   db?: DatabaseKind | null;
   redis: boolean;
+  mailpit?: boolean;
   dbName?: string | null;
   dbUser?: string | null;
   dbPassword?: string | null;
@@ -120,6 +121,7 @@ export interface CreateProjectArgs {
   nodeVersion?: string;
   db?: DatabaseKind | null;
   redis: boolean;
+  mailpit: boolean;
   startCommand?: string;
   appPort?: number;
   /** Custom DB credentials; omitted = the "app" defaults. */
@@ -277,6 +279,17 @@ export function redisConnection(config: ProjectConfig) {
   return { host: "redis", port: 6379, url: "redis://redis:6379" };
 }
 
+/** Mailpit details: SMTP from the app containers, web UI routed under
+ * the project's own domain (Traefik PathPrefix — no extra hosts entry). */
+export function mailpitConnection(config: ProjectConfig) {
+  if (!config.mailpit) return null;
+  return {
+    host: "mailpit",
+    smtpPort: 1025,
+    url: `http://${projectDomain(config.name)}/mailpit/`,
+  };
+}
+
 /** DB connection details as rendered into the compose file. */
 export function dbConnection(config: ProjectConfig) {
   if (!config.db) return null;
@@ -306,6 +319,9 @@ export function plannedServices(config: ProjectConfig): ServiceState[] {
   }
   if (config.redis) {
     services.push({ name: "redis", state: "stopped", image: "redis:7-alpine" });
+  }
+  if (config.mailpit) {
+    services.push({ name: "mailpit", state: "stopped", image: "axllent/mailpit" });
   }
   return services;
 }
