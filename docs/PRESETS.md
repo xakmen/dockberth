@@ -95,6 +95,18 @@ the right precedence position (see below).
     "image": "wordpress:cli",
     "args": ["php", "-d", "memory_limit=512M", "/usr/local/bin/wp", "core", "download", "--locale=en_US", "--allow-root"],
     "env": { "HOME": "/tmp" }
+  },
+
+  // Optional post-scaffold configuration: one more one-off container run
+  // AFTER the project is created, with {db_name} / {db_user} /
+  // {db_password} placeholders substituted from the project's config.
+  // Runs only for freshly scaffolded projects — projects registered from
+  // an existing folder are never touched (Dockberth never edits user
+  // code). Failure is non-fatal: the user still has the Connections card.
+  "configure": {
+    "image": "wordpress:cli",
+    "args": ["wp", "config", "create", "--dbname={db_name}", "--dbuser={db_user}", "--dbpass={db_password}", "--dbhost=db", "--skip-check", "--allow-root"],
+    "env": { "HOME": "/tmp" }
   }
 }
 ```

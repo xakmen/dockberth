@@ -51,6 +51,7 @@ pub fn run() {
             preset::preset_list,
             scaffold::scaffold_project,
             scaffold::scaffold_cancel,
+            scaffold::scaffold_configure,
             wsl::wsl_list_distros,
             wsl::wsl_check_docker,
             settings::settings_get,

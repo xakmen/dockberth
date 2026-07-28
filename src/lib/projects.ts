@@ -47,6 +47,9 @@ export interface Preset {
   openPath?: string | null;
   /** Present when the preset supports "New project" scaffolding. */
   scaffold?: ScaffoldSpec | null;
+  /** Post-scaffold configuration step (e.g. WordPress `wp config create`);
+   * runs only for freshly scaffolded projects. */
+  configure?: ScaffoldSpec | null;
 }
 
 export interface ProjectConfig {
@@ -252,6 +255,21 @@ export function isValidDbValue(value: string): boolean {
   return /^[A-Za-z0-9_.-]{1,64}$/.test(value);
 }
 
+/** Default DB password for new projects — static and predictable on
+ * purpose (local dev behind the compose network; Homestead-style). */
+export const DEFAULT_DB_PASSWORD = "secret";
+
+/** Project-derived default DB name/user: the project slug with `-` → `_`
+ * (hyphens need quoting in SQL). The user is capped at 32 chars — MySQL's
+ * user name limit; the name at 64 — matching is_safe_db_value. */
+export function derivedDbName(projectName: string): string {
+  return projectName.replace(/-/g, "_").slice(0, 64);
+}
+
+export function derivedDbUser(projectName: string): string {
+  return projectName.replace(/-/g, "_").slice(0, 32);
+}
+
 /** Redis connection details. The service ships with no auth and no
  * published port — reachable only from the project's containers. */
 export function redisConnection(config: ProjectConfig) {
@@ -356,6 +374,13 @@ export const scaffoldProject = (
 ) => invoke<void>("scaffold_project", { parentPath, name, preset, channel });
 export const scaffoldCancel = (name: string, parentPath: string) =>
   invoke<void>("scaffold_cancel", { name, parentPath });
+/** Run the preset's post-scaffold configure step (new projects only). */
+export const scaffoldConfigure = (
+  path: string,
+  name: string,
+  preset: string,
+  creds: { dbName: string; dbUser: string; dbPassword: string },
+) => invoke<void>("scaffold_configure", { path, name, preset, ...creds });
 
 /** `<parent>/<name>` using the parent's own separator style. */
 export function joinPath(parent: string, name: string): string {

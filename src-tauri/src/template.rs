@@ -46,7 +46,7 @@ pub fn is_reserved_project_name(name: &str) -> bool {
 /// Safe for an unquoted YAML scalar (DB name / user / password). Rejects
 /// whitespace, newlines and YAML-structural characters; the default value
 /// is "app", and hand-edited configs must stay within this set.
-fn is_safe_db_value(value: &str) -> bool {
+pub fn is_safe_db_value(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= 64
         && value

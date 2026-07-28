@@ -366,6 +366,7 @@ function App() {
       <NewProjectDialog
         open={wizardOpen}
         onOpenChange={setWizardOpen}
+        notify={notify}
         onCreated={(project) => {
           setWizardOpen(false);
           setSelectedName(project.name);
