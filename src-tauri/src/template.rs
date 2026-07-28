@@ -68,6 +68,16 @@ fn escape_compose_dollar(value: &str) -> String {
 /// identical to upstream plus --allow-to-run-as-root (see the php base).
 pub const FPM_ROOT_RUN: &str = "#!/command/execlineb -P\nwith-contenv\ns6-notifyoncheck -d\n/usr/local/sbin/php-fpm --nodaemonize --allow-to-run-as-root\n";
 
+/// PHP ini override mounted into the app container when Mailpit is
+/// enabled: PHP's mail() shells out to sendmail (the image's exim4 is
+/// local-only and drops everything), so route it through the bridge
+/// script that speaks SMTP to the mailpit service instead.
+pub const MAILPIT_INI: &str =
+    "sendmail_path = \"php /usr/local/bin/dockberth-sendmail.php\"\n";
+
+/// The mail() → SMTP bridge script (see templates/php/dockberth-sendmail.php).
+pub const MAILPIT_SENDMAIL: &str = include_str!("../../templates/php/dockberth-sendmail.php");
+
 fn render(template: &str, vars: &[(&str, &str)], sections: &[(&str, bool)]) -> String {
     let mut out = String::new();
     // Stack of include-states; sections nest (e.g. ntfs_root inside wpcli).
@@ -219,7 +229,7 @@ pub fn render_project_compose(
                     ("db_mysql", !db.is_postgres()),
                     ("db_postgres", db.is_postgres()),
                     ("redis", config.redis),
-                    ("mailpit", has_section("mailpit")),
+                    ("mailpit", config.mailpit || has_section("mailpit")),
                     ("adminer", has_section("adminer")),
                     ("wpcli", has_section("wpcli")),
                     ("ntfs_root", !wsl),
@@ -269,6 +279,7 @@ pub fn render_project_compose(
                     ("db_mysql", r.db.map(|d| !d.is_postgres()).unwrap_or(false)),
                     ("db_postgres", r.db.map(|d| d.is_postgres()).unwrap_or(false)),
                     ("redis", config.redis),
+                    ("mailpit", config.mailpit),
                     ("node_modules_overlay", !wsl),
                     ("wsl_user", wsl),
                 ],
@@ -322,6 +333,7 @@ mod tests {
             node_version: None,
             db,
             redis,
+            mailpit: false,
             db_name: None,
             db_user: None,
             db_password: None,
@@ -456,6 +468,33 @@ mod tests {
         // The default "app" credentials still render fine.
         let ok = config("laravel", Some(Database::Mariadb11), false);
         assert!(render_project_compose(php, &ok, "x.test", false, 0, 0).is_ok());
+    }
+
+    #[test]
+    fn renders_mailpit_when_enabled() {
+        let php = find_preset("laravel").unwrap();
+        let mut cfg = config("laravel", Some(Database::Mariadb11), false);
+        cfg.mailpit = true;
+        let out = render_project_compose(php, &cfg, "shop.test", false, 0, 0).unwrap();
+        assert!(out.contains("image: axllent/mailpit"));
+        assert!(out.contains("MP_WEBROOT: /mailpit"));
+        // PHP base gets the mail() → SMTP bridge mounted into the app.
+        assert!(out.contains("./dockberth-sendmail.php:/usr/local/bin/dockberth-sendmail.php:ro"));
+        assert!(out.contains("./dockberth-mailpit.ini:/usr/local/etc/php/conf.d/zzz-dockberth-mailpit.ini:ro"));
+        assert!(out.contains("routers.aquashop-mailpit.rule: Host(`shop.test`) && PathPrefix(`/mailpit`)"));
+        assert!(out.contains("services.aquashop-mailpit.loadbalancer.server.port: \"8025\""));
+
+        let node = find_preset("node-generic").unwrap();
+        let mut ncfg = config("node-generic", None, false);
+        ncfg.mailpit = true;
+        let nout = render_project_compose(node, &ncfg, "api.test", true, 1000, 1000).unwrap();
+        assert!(nout.contains("image: axllent/mailpit"));
+        assert!(nout.contains("PathPrefix(`/mailpit`)"));
+
+        // Off by default.
+        let plain = config("laravel", Some(Database::Mariadb11), false);
+        let pout = render_project_compose(php, &plain, "shop.test", false, 0, 0).unwrap();
+        assert!(!pout.contains("mailpit"));
     }
 
     #[test]

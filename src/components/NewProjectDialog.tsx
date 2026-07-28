@@ -111,6 +111,7 @@ export function NewProjectDialog({
   const [dbUserEdit, setDbUserEdit] = useState<string | null>(null);
   const [dbPassword, setDbPassword] = useState(DEFAULT_DB_PASSWORD);
   const [redis, setRedis] = useState(false);
+  const [mailpit, setMailpit] = useState(false);
   const [startCommand, setStartCommand] = useState("npm run dev");
   const [appPort, setAppPort] = useState("3000");
   const [creating, setCreating] = useState(false);
@@ -151,6 +152,7 @@ export function NewProjectDialog({
     setDbUserEdit(null);
     setDbPassword(DEFAULT_DB_PASSWORD);
     setRedis(false);
+    setMailpit(false);
     setStartCommand("npm run dev");
     setAppPort("3000");
     setCreating(false);
@@ -194,6 +196,7 @@ export function NewProjectDialog({
     setNodeVersion(defaults?.nodeVersion ?? "22");
     setDb(defaults?.db ?? (p?.base === "php" ? "mariadb-11" : "none"));
     setRedis(defaults?.redis ?? false);
+    setMailpit(false);
     setStartCommand(defaults?.startCommand ?? "npm run dev");
     setAppPort(String(p?.appPort ?? 3000));
   };
@@ -302,6 +305,7 @@ export function NewProjectDialog({
       nodeVersion: base === "node" ? nodeVersion : undefined,
       db: db === "none" ? null : db,
       redis,
+      mailpit,
       startCommand: base === "node" ? nodeOverrides?.startCommand : undefined,
       appPort: base === "node" ? nodeOverrides?.appPort : undefined,
       dbName: db === "none" ? undefined : dbName,
@@ -781,14 +785,24 @@ export function NewProjectDialog({
           {activePreset ? (
             <div className="flex flex-col gap-2">
               <Label className={FIELD_LABEL}>Optional services</Label>
-              <label className="flex w-fit cursor-pointer items-center gap-2.5 rounded-md border border-input px-3 py-2.5 text-[12.5px] text-secondary-foreground has-[[data-state=checked]]:border-accent-border has-[[data-state=checked]]:bg-accent/40 has-[[data-state=checked]]:text-foreground">
-                <Checkbox
-                  checked={redis}
-                  disabled={busy}
-                  onCheckedChange={(checked) => setRedis(checked === true)}
-                />
-                Redis
-              </label>
+              <div className="flex gap-2">
+                <label className="flex w-fit cursor-pointer items-center gap-2.5 rounded-md border border-input px-3 py-2.5 text-[12.5px] text-secondary-foreground has-[[data-state=checked]]:border-accent-border has-[[data-state=checked]]:bg-accent/40 has-[[data-state=checked]]:text-foreground">
+                  <Checkbox
+                    checked={redis}
+                    disabled={busy}
+                    onCheckedChange={(checked) => setRedis(checked === true)}
+                  />
+                  Redis
+                </label>
+                <label className="flex w-fit cursor-pointer items-center gap-2.5 rounded-md border border-input px-3 py-2.5 text-[12.5px] text-secondary-foreground has-[[data-state=checked]]:border-accent-border has-[[data-state=checked]]:bg-accent/40 has-[[data-state=checked]]:text-foreground">
+                  <Checkbox
+                    checked={mailpit}
+                    disabled={busy}
+                    onCheckedChange={(checked) => setMailpit(checked === true)}
+                  />
+                  Mailpit
+                </label>
+              </div>
             </div>
           ) : null}
 

@@ -76,6 +76,23 @@ services:
       - default
 #[/section]
 
+#[section:mailpit]
+  # SMTP catcher: apps send mail to mailpit:1025; the web UI is served
+  # under the project's own domain at /mailpit (no extra hosts entry).
+  mailpit:
+    image: axllent/mailpit
+    restart: "no"
+    environment:
+      MP_WEBROOT: /mailpit
+    networks:
+      - default
+      - dockberth
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.{project}-mailpit.rule: Host(`{domain}`) && PathPrefix(`/mailpit`)
+      traefik.http.services.{project}-mailpit.loadbalancer.server.port: "8025"
+#[/section]
+
 #[section:db]
 volumes:
   db-data:
