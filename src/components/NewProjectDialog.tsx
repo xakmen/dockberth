@@ -23,11 +23,14 @@ import {
 } from "@/components/ui/select";
 import {
   DB_LABEL,
-  DEFAULT_DB_VALUE,
   NODE_VERSIONS,
   PHP_VERSIONS,
   createProject,
+  DEFAULT_DB_PASSWORD,
+  derivedDbName,
+  derivedDbUser,
   isValidDbValue,
+  scaffoldConfigure,
   detectProject,
   isValidProjectName,
   joinPath,
@@ -74,12 +77,14 @@ interface NewProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (project: ProjectInfo) => void;
+  notify: (message: string) => void;
 }
 
 export function NewProjectDialog({
   open,
   onOpenChange,
   onCreated,
+  notify,
 }: NewProjectDialogProps) {
   const [mode, setMode] = useState<Mode>("existing");
   const [presets, setPresets] = useState<Preset[]>([]);
@@ -100,9 +105,11 @@ export function NewProjectDialog({
   const [phpVersion, setPhpVersion] = useState<string>("8.3");
   const [nodeVersion, setNodeVersion] = useState<string>("22");
   const [db, setDb] = useState<DbChoice>("mariadb-11");
-  const [dbName, setDbName] = useState(DEFAULT_DB_VALUE);
-  const [dbUser, setDbUser] = useState(DEFAULT_DB_VALUE);
-  const [dbPassword, setDbPassword] = useState(DEFAULT_DB_VALUE);
+  /** null = follow the project name (derived defaults); a string means the
+   * user edited the field and it stops tracking the name. */
+  const [dbNameEdit, setDbNameEdit] = useState<string | null>(null);
+  const [dbUserEdit, setDbUserEdit] = useState<string | null>(null);
+  const [dbPassword, setDbPassword] = useState(DEFAULT_DB_PASSWORD);
   const [redis, setRedis] = useState(false);
   const [startCommand, setStartCommand] = useState("npm run dev");
   const [appPort, setAppPort] = useState("3000");
@@ -140,9 +147,9 @@ export function NewProjectDialog({
     setPhpVersion("8.3");
     setNodeVersion("22");
     setDb("mariadb-11");
-    setDbName(DEFAULT_DB_VALUE);
-    setDbUser(DEFAULT_DB_VALUE);
-    setDbPassword(DEFAULT_DB_VALUE);
+    setDbNameEdit(null);
+    setDbUserEdit(null);
+    setDbPassword(DEFAULT_DB_PASSWORD);
     setRedis(false);
     setStartCommand("npm run dev");
     setAppPort("3000");
@@ -250,6 +257,8 @@ export function NewProjectDialog({
   const activePreset = mode === "existing" ? preset : stackPreset;
 
   const portValid = /^\d+$/.test(appPort) && +appPort > 0 && +appPort < 65536;
+  const dbName = dbNameEdit ?? derivedDbName(name);
+  const dbUser = dbUserEdit ?? derivedDbUser(name);
   /** Mirror of the Rust-side checks in template::render_project_compose. */
   const dbCredsError =
     db === "none"
@@ -282,6 +291,7 @@ export function NewProjectDialog({
     projectPath: string,
     chosen: Preset,
     nodeOverrides?: { startCommand: string; appPort: number },
+    scaffolded = false,
   ) => {
     const base = chosen.base;
     const project = await createProject({
@@ -298,6 +308,20 @@ export function NewProjectDialog({
       dbUser: db === "none" ? undefined : dbUser,
       dbPassword: db === "none" ? undefined : dbPassword,
     });
+    // Freshly scaffolded projects only (never touch existing user code):
+    // run the preset's configure step, e.g. WordPress `wp config create`
+    // writing the credentials into wp-config.php. Best-effort — the
+    // project is already created; the Connections card always has the
+    // values as a fallback.
+    if (scaffolded && chosen.configure && db !== "none") {
+      await scaffoldConfigure(projectPath, name, chosen.id, {
+        dbName,
+        dbUser,
+        dbPassword,
+      }).catch((err: unknown) =>
+        notify(`Couldn't write wp-config.php: ${String(err)}`),
+      );
+    }
     setPendingCreate(null);
     reset();
     onCreated(project);
@@ -325,7 +349,7 @@ export function NewProjectDialog({
     setCreating(true);
     setError(null);
     try {
-      await finishCreate(pendingCreate.path, pendingCreate.preset);
+      await finishCreate(pendingCreate.path, pendingCreate.preset, undefined, true);
     } catch (err: unknown) {
       setError(String(err));
       setCreating(false);
@@ -355,7 +379,7 @@ export function NewProjectDialog({
         const scaffoldedPath = joinPath(parentPath, name);
         // Remember it so a failed create can be retried without re-scaffolding.
         setPendingCreate({ path: scaffoldedPath, preset: stackPreset });
-        void finishCreate(scaffoldedPath, stackPreset).catch((err: unknown) => {
+        void finishCreate(scaffoldedPath, stackPreset, undefined, true).catch((err: unknown) => {
           setError(String(err));
           setCreating(false);
         });
@@ -712,7 +736,7 @@ export function NewProjectDialog({
                     id="db-name"
                     value={dbName}
                     disabled={busy}
-                    onChange={(e) => setDbName(e.target.value)}
+                    onChange={(e) => setDbNameEdit(e.target.value)}
                     className={`${FIELD_INPUT} font-mono text-xs`}
                   />
                 </div>
@@ -724,7 +748,7 @@ export function NewProjectDialog({
                     id="db-user"
                     value={dbUser}
                     disabled={busy}
-                    onChange={(e) => setDbUser(e.target.value)}
+                    onChange={(e) => setDbUserEdit(e.target.value)}
                     className={`${FIELD_INPUT} font-mono text-xs`}
                   />
                 </div>
@@ -741,12 +765,13 @@ export function NewProjectDialog({
                   />
                 </div>
               </div>
-              {dbCredsError ? (
+              {dbCredsError && name ? (
                 <span className="text-[11.5px] text-status-error">{dbCredsError}</span>
               ) : (
                 <span className="text-[11.5px] text-muted-foreground">
-                  Local dev credentials — they land in the generated compose
-                  file and the project's Database card.
+                  Pre-filled from the project name (password{" "}
+                  <span className="font-mono">secret</span>) — edit freely;
+                  they land in the compose file and the Connections card.
                 </span>
               )}
             </div>

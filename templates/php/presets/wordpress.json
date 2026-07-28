@@ -13,5 +13,10 @@
     "args": ["php", "-d", "memory_limit=512M", "/usr/local/bin/wp", "core", "download", "--locale=en_US", "--allow-root"],
     "env": { "HOME": "/tmp" }
   },
-  "notes": "Use the Database card values in wp-config.php (DB_HOST is `db`). WP-CLI ships as a `tools` profile service."
+  "configure": {
+    "image": "wordpress:cli",
+    "args": ["wp", "config", "create", "--dbname={db_name}", "--dbuser={db_user}", "--dbpass={db_password}", "--dbhost=db", "--skip-check", "--allow-root"],
+    "env": { "HOME": "/tmp" }
+  },
+  "notes": "New projects get wp-config.php pre-filled with the Connections card values (DB_HOST is `db`). WP-CLI ships as a `tools` profile service."
 }

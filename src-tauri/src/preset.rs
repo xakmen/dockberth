@@ -87,6 +87,13 @@ pub struct Preset {
     /// specifics live HERE, as data — never hardcoded outside the preset.
     #[serde(default)]
     pub scaffold: Option<ScaffoldSpec>,
+    /// Post-scaffold configuration: one more one-off container run after
+    /// the project is created, with `{db_name}` / `{db_user}` /
+    /// `{db_password}` placeholders substituted (e.g. WordPress
+    /// `wp config create`). Runs only for freshly scaffolded projects —
+    /// existing project folders are never touched.
+    #[serde(default)]
+    pub configure: Option<ScaffoldSpec>,
 }
 
 /// All embedded presets, for the new-project dialog's stack picker.
@@ -184,6 +191,14 @@ mod tests {
             ["/usr/local/bin/wp", "core", "download", "--locale=en_US", "--allow-root"]
         );
         assert_eq!(wp.env.get("HOME").map(String::as_str), Some("/tmp"));
+        // The configure step writes wp-config.php with the project's
+        // credentials; placeholders are substituted at run time.
+        let cfg = find_preset("wordpress").unwrap().configure.as_ref().unwrap();
+        assert_eq!(cfg.image, "wordpress:cli");
+        assert!(cfg.args.contains(&"--dbname={db_name}".to_string()));
+        assert!(cfg.args.contains(&"--skip-check".to_string()));
+        assert!(cfg.args.contains(&"--allow-root".to_string()));
+        assert!(find_preset("laravel").unwrap().configure.is_none());
         assert!(find_preset("laravel").unwrap().scaffold.is_none());
         assert!(find_preset("vendure").unwrap().scaffold.is_none());
         assert!(find_preset("node-generic").unwrap().scaffold.is_none());

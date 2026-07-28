@@ -266,6 +266,81 @@ pub async fn scaffold_project(
     Ok(())
 }
 
+/// Substitute the credential placeholders a `configure` spec may carry.
+/// Values are charset-validated by the caller and passed as argv entries
+/// (no shell), so plain replacement is safe.
+fn substitute_creds(args: &[String], db_name: &str, db_user: &str, db_password: &str) -> Vec<String> {
+    args.iter()
+        .map(|arg| {
+            arg.replace("{db_name}", db_name)
+                .replace("{db_user}", db_user)
+                .replace("{db_password}", db_password)
+        })
+        .collect()
+}
+
+/// Run the preset's post-scaffold `configure` container (e.g. WordPress
+/// `wp config create`) against a freshly scaffolded project. One-shot and
+/// synchronous — configure steps are quick file writes, not downloads.
+#[tauri::command]
+pub async fn scaffold_configure(
+    app: AppHandle,
+    path: String,
+    name: String,
+    preset: String,
+    db_name: String,
+    db_user: String,
+    db_password: String,
+) -> Result<(), String> {
+    if !is_valid_project_name(&name) {
+        return Err(format!("invalid project name '{name}'"));
+    }
+    let preset = preset::find_preset(&preset)
+        .ok_or_else(|| format!("unknown preset '{preset}'"))?;
+    let spec = preset
+        .configure
+        .clone()
+        .ok_or_else(|| format!("preset '{}' has no configure step", preset.id))?;
+    for value in [&db_name, &db_user, &db_password] {
+        if !crate::template::is_safe_db_value(value) {
+            return Err("invalid database credentials".into());
+        }
+    }
+    if !Path::new(&path).is_dir() {
+        return Err(format!("'{path}' is not a directory"));
+    }
+
+    let location = derive_location(&path);
+    let uid_gid = match &location {
+        Location::Wsl { distro, .. } => Some(wsl::default_uid_gid(&app, distro).await?),
+        Location::Ntfs { .. } => None,
+    };
+    let spec = ScaffoldSpec {
+        args: substitute_creds(&spec.args, &db_name, &db_user, &db_password),
+        ..spec
+    };
+    let (program, args) = build_command(&location, &spec, &name, uid_gid);
+    let output = app
+        .shell()
+        .command(&program)
+        .args(&args)
+        .output()
+        .await
+        .map_err(|e| format!("cannot start configure container: {e}"))?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let tail = if stderr.trim().is_empty() { stdout } else { stderr };
+        Err(format!(
+            "configure exited with {:?}: {}",
+            output.status.code(),
+            tail.trim()
+        ))
+    }
+}
+
 /// Cancel a running scaffold: force-remove its container (the `docker run`
 /// client then exits non-zero and the runner task cleans the target up).
 #[tauri::command]
@@ -351,6 +426,19 @@ mod tests {
         cleanup_target(&preexisting, false);
         assert!(preexisting.exists());
         assert_eq!(fs::read_dir(&preexisting).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn substitutes_credential_placeholders() {
+        let args: Vec<String> = ["wp", "config", "create", "--dbname={db_name}",
+            "--dbuser={db_user}", "--dbpass={db_password}", "--dbhost=db"]
+            .map(String::from)
+            .to_vec();
+        assert_eq!(
+            substitute_creds(&args, "my_shop", "my_shop", "a1b2c3"),
+            ["wp", "config", "create", "--dbname=my_shop", "--dbuser=my_shop",
+             "--dbpass=a1b2c3", "--dbhost=db"]
+        );
     }
 
     #[test]
